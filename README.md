@@ -2,6 +2,15 @@
 
 A modern QR code-based menu management system for restaurants and cafes.
 
+## Project Information
+
+QRMENU is a web-based digital menu platform that helps restaurants and cafes:
+
+- Create QR codes for menu access
+- Manage menu items from a central dashboard
+- Deliver a responsive customer experience on mobile and desktop
+- Support quick and efficient ordering workflows
+
 ## Features
 
 - QR code generation for digital menus
@@ -18,28 +27,27 @@ A modern QR code-based menu management system for restaurants and cafes.
 
 ### Installation
 
-```
-bash
+```bash
 # Clone the repository
 git clone https://github.com/MiniProject-Team/QRMENU.git
 
 # Navigate to the project directory
 cd QRMENU
 
-# Install dependencies
-npm install
-```
 
-### Usage
 
-```
-bash
-# Start the development server
-npm run dev
+### Clone Repository in VS Code
 
-# Build for production
-npm run build
-```
+1. Open Visual Studio Code.
+2. Press `Ctrl + Shift + P` to open the Command Palette.
+3. Run: `Git: Clone`.
+4. Paste this repository URL:
+   `https://github.com/MiniProject-Team/QRMENU.git`
+5. Select a local folder where the project should be downloaded.
+6. Click **Open** when VS Code asks to open the cloned repository.
+7. Open a terminal in VS Code and run:
+
+
 
 ## Contributing
 
