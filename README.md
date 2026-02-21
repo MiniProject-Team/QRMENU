@@ -18,12 +18,6 @@ QRMENU is a web-based digital menu platform that helps restaurants and cafes:
 - Responsive design for all devices
 - Fast and efficient ordering system
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or higher)
-- npm or yarn
 
 ### Installation
 
