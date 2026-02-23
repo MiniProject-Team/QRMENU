@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class QrFoodApplication {
 
     public static void main(String[] args) {
+        
         SpringApplication.run(QrFoodApplication.class, args);
     }
 }
