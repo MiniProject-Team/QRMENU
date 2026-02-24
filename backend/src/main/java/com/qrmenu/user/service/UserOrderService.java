@@ -19,21 +19,25 @@ public class UserOrderService {
 
     public Order placeOrder(OrderRequest request) {
 
-        Order order = new Order();
-        order.setTableId(request.getTableId());
-        order.setStatus(OrderStatus.PLACED);
-        order.setCreatedAt(LocalDateTime.now());
-
-        List<OrderItem> items = request.getItems().stream().map(itemReq -> {
-            OrderItem item = new OrderItem();
-            item.setMenuItemId(itemReq.getItemId());
-            item.setQuantity(itemReq.getQuantity());
-            item.setOrder(order);
-            return item;
-        }).toList();
-
-        order.setItems(items);
-
-        return orderRepo.save(order);
+    if (request.getItems() == null || request.getItems().isEmpty()) {
+        throw new RuntimeException("Cart is empty");
     }
+
+    Order order = new Order();
+    order.setTableId(request.getTableId());
+    order.setStatus(OrderStatus.PLACED);
+    order.setCreatedAt(LocalDateTime.now());
+
+    List<OrderItem> items = request.getItems().stream().map(itemReq -> {
+        OrderItem item = new OrderItem();
+        item.setMenuItemId(itemReq.getItemId());
+        item.setQuantity(itemReq.getQuantity());
+        item.setOrder(order);
+        return item;
+    }).toList();
+
+    order.setItems(items);
+
+    return orderRepo.save(order);
+}
 }

@@ -47,13 +47,13 @@ const Menu = () => {
         }))
       };
 
-      const res = await API.post("/user/orders", payload);
+      const res = await API.post("/user/cart/add", payload);
 
       // Clear cart
       setCart([]);
 
       // Redirect to cart page with order ID
-      navigate("/cart", { state: { orderId: res.data.id } });
+      navigate(`/cart/${res.data.id}`);
 
     } catch (err) {
       console.error("Order failed:", err);
@@ -89,10 +89,10 @@ const Menu = () => {
       ))}
 
       {cart.length > 0 && (
-        <button onClick={placeOrder}>
-          Place Order
-        </button>
-      )}
+  <button onClick={() => navigate("/cart", { state: { cart, tableId } })}>
+    Go To Cart
+  </button>
+)}
 
     </div>
   );

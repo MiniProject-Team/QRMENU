@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "../pages/auth/Login";
 
 import AdminDashboard from "../pages/Admin/Dashboard";
+import Cart from "../pages/User/Cart";
 import KitchenPanel from "../pages/kitchen/KitchenPanel";
 import Menu from "../pages/User/Menu";
 import ManageMenu from "../pages/Admin/ManageMenu";
@@ -18,6 +19,7 @@ const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/cart" element={<Cart />} />
         <Route path="/admin/menu" element={<ManageMenu />} />
 <Route path="/admin/categories" element={<Categories />} />
 <Route path="/admin/tables" element={<Tables />} />
@@ -28,7 +30,7 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
 
         {/* USER */}
-        <Route path="/menu/:tableId" element={<Menu />} />
+        <Route path="/" element={<Menu />} />
 
         {/* ADMIN */}
         <Route

@@ -1,47 +1,57 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import API from "../../api/axios";
 
 const Cart = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const orderId = location.state?.orderId;
+  const { cart, tableId } = location.state || {};
+
+  if (!cart || cart.length === 0) {
+    return <h2>Cart is empty</h2>;
+  }
+
+  const placeOrder = async () => {
+    try {
+
+      const payload = {
+        tableId: tableId,
+        items: cart.map(i => ({
+          itemId: i.id,
+          quantity: i.quantity
+        }))
+      };
+
+      const res = await API.post("/user/orders", payload);
+
+      alert("Order placed successfully!");
+
+      navigate(`/order-success/${res.data.id}`);
+
+    } catch (err) {
+      console.error("Order failed:", err);
+      alert("Failed to place order");
+    }
+  };
 
   return (
     <div style={{ padding: 20 }}>
 
-      <h1>Order Confirmation</h1>
+      <h1>Cart</h1>
 
-      {orderId ? (
-        <>
-          <h2>✅ Order Placed Successfully!</h2>
-          <p>Your Order ID is: <strong>{orderId}</strong></p>
+      {cart.map(item => (
+        <div key={item.id}>
+          {item.name} x {item.quantity}
+        </div>
+      ))}
 
-          <button style={button} onClick={() => navigate("/")}>
-            Back to Menu
-          </button>
-        </>
-      ) : (
-        <>
-          <h2>No Order Found</h2>
-          <button style={button} onClick={() => navigate("/")}>
-            Go to Menu
-          </button>
-        </>
-      )}
+      <button onClick={placeOrder}>
+        Place Order
+      </button>
 
     </div>
   );
-};
-
-const button = {
-  marginTop: 20,
-  padding: "10px 20px",
-  backgroundColor: "#4CAF50",
-  color: "white",
-  border: "none",
-  borderRadius: 6,
-  cursor: "pointer"
 };
 
 export default Cart;
