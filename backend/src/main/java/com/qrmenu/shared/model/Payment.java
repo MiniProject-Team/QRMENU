@@ -26,8 +26,7 @@ public class Payment {
     private PaymentMethod paymentMethod;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentStatus status;
+private PaymentStatus status = PaymentStatus.PENDING;
 
     private String transactionId;
 

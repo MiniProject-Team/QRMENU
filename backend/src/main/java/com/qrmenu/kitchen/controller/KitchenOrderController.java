@@ -1,7 +1,6 @@
 package com.qrmenu.kitchen.controller;
 
-import com.qrmenu.kitchen.dto.KitchenOrderDTO;
-import com.qrmenu.kitchen.service.KitchenOrderService;
+import com.qrmenu.shared.model.Order;
 import com.qrmenu.shared.enums.OrderStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,16 +21,15 @@ public class KitchenOrderController {
         return service.getActiveOrders();
     }
 
-    @PutMapping("/accept/{id}")
-    public KitchenOrderDTO acceptOrder(@PathVariable Long id) {
-        return service.updateStatus(id, OrderStatus.ACCEPTED);
-    }
+   @PutMapping("/{id}/accept")
+public Order accept(@PathVariable Long id) {
+    return service.updateStatus(id, OrderStatus.ACCEPTED);
+}
 
-    @PutMapping("/cooking/{id}")
-    public KitchenOrderDTO cookingOrder(@PathVariable Long id) {
-        return service.updateStatus(id, OrderStatus.COOKING);
-    }
-
+@PutMapping("/{id}/prepare")
+public Order preparing(@PathVariable Long id) {
+    return service.updateStatus(id, OrderStatus.PREPARING);
+}
     @PutMapping("/ready/{id}")
     public KitchenOrderDTO readyOrder(@PathVariable Long id) {
         return service.updateStatus(id, OrderStatus.READY);

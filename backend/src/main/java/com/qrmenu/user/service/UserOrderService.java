@@ -1,61 +1,35 @@
 package com.qrmenu.user.service;
 
 import com.qrmenu.shared.enums.OrderStatus;
-import com.qrmenu.shared.model.*;
-import com.qrmenu.shared.repository.*;
-import com.qrmenu.user.dto.*;
-import lombok.RequiredArgsConstructor;
+import com.qrmenu.shared.model.Order;
+import com.qrmenu.shared.model.OrderItem;
+import com.qrmenu.shared.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class UserOrderService {
 
-    private final OrderRepository orderRepo;
-    private final TableRepository tableRepo;
-    private final MenuRepository menuRepo;
+    private final OrderRepository orderRepository;
 
-    public Order placeOrder(OrderRequest request) {
+    public UserOrderService(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
 
-        TableEntity table = tableRepo.findById(request.getTableId())
-                .orElseThrow();
+    public Order placeOrder(Long tableId, List<OrderItem> items) {
 
         Order order = new Order();
-        order.setTableEntity(table);
+        order.setTableId(tableId);
         order.setStatus(OrderStatus.PLACED);
         order.setCreatedAt(LocalDateTime.now());
+        order.setItems(items);
 
-        List<OrderItem> orderItems = new ArrayList<>();
-
-        for (OrderItemRequest itemRequest : request.getItems()) {
-
-            MenuItem item = menuRepo.findById(itemRequest.getItemId())
-                    .orElseThrow();
-
-            OrderItem orderItem = new OrderItem();
-            orderItem.setMenuItem(item);
-            orderItem.setQuantity(itemRequest.getQuantity());
-            orderItem.setOrder(order);
-
-            orderItems.add(orderItem);
+        for (OrderItem item : items) {
+            item.setOrder(order);
         }
 
-        order.setItems(orderItems);
-
-        return orderRepo.save(order);
-    }
-
-    public Order getOrder(Long orderId) {
-        return orderRepo.findById(orderId).orElseThrow();
-    }
-
-    public void cancelOrder(Long orderId) {
-        Order order = orderRepo.findById(orderId).orElseThrow();
-        order.setStatus(OrderStatus.CANCELLED);
-        orderRepo.save(order);
+        return orderRepository.save(order);
     }
 }

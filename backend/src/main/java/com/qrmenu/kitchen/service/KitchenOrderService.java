@@ -38,7 +38,7 @@ public class KitchenOrderService {
         KitchenOrderDTO dto = new KitchenOrderDTO();
         dto.setId(order.getId());
         dto.setStatus(order.getStatus());
-        dto.setCreatedAt(order.getCreatedAt());
+        dto.setCreatedAt(order.getCreatedAt()); // ✅ NOW EXISTS
         return dto;
     }
 }

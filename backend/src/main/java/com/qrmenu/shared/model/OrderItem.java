@@ -9,22 +9,15 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    private Order order;
-
-    @ManyToOne
-    private MenuItem menuItem;
-
+    private Long menuItemId;
     private int quantity;
 
-    public Long getId() { return id; }
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order order;
 
-    public Order getOrder() { return order; }
-    public void setOrder(Order order) { this.order = order; }
-
-    public MenuItem getMenuItem() { return menuItem; }
-    public void setMenuItem(MenuItem menuItem) { this.menuItem = menuItem; }
-
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
+    // GETTERS & SETTERS
+    public void setOrder(Order order) {
+        this.order = order;
+    }
 }
