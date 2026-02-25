@@ -1,5 +1,4 @@
 package com.qrmenu.user.service;
-
 import com.qrmenu.shared.enums.OrderStatus;
 import com.qrmenu.shared.model.Order;
 import com.qrmenu.shared.repository.OrderRepository;

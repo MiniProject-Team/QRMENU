@@ -20,7 +20,12 @@ public class OrderStatusService {
     }
 
     // Get orders by table
-   public List<Order> getOrdersByTable(Long tableId) {
-    return orderRepository.findByTableId(tableId);
-}
+    public List<Order> getOrdersByTable(Long tableId) {
+        return orderRepository.findByTableId(tableId);
+    }
+
+    // Save updated order (used for cancel)
+    public Order save(Order order) {
+        return orderRepository.save(order);
+    }
 }

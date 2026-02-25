@@ -1,42 +1,42 @@
 package com.qrmenu.kitchen.controller;
 
+import com.qrmenu.kitchen.dto.KitchenOrderDTO;
+import com.qrmenu.kitchen.service.KitchenOrderService;
 import com.qrmenu.shared.model.Order;
-import com.qrmenu.shared.enums.OrderStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/kitchen/orders")
+@RequiredArgsConstructor
 public class KitchenOrderController {
 
     private final KitchenOrderService service;
 
-    public KitchenOrderController(KitchenOrderService service) {
-        this.service = service;
-    }
-
-    @GetMapping
-    public List<KitchenOrderDTO> getOrders() {
+    @GetMapping("/active")
+    public List<KitchenOrderDTO> getActiveOrders() {
         return service.getActiveOrders();
     }
 
-   @PutMapping("/{id}/accept")
-public Order accept(@PathVariable Long id) {
-    return service.updateStatus(id, OrderStatus.ACCEPTED);
-}
+    @PutMapping("/accept/{id}")
+    public Order accept(@PathVariable Long id) {
+        return service.acceptOrder(id);
+    }
 
-@PutMapping("/{id}/prepare")
-public Order preparing(@PathVariable Long id) {
-    return service.updateStatus(id, OrderStatus.PREPARING);
-}
+    @PutMapping("/cooking/{id}")
+    public Order cooking(@PathVariable Long id) {
+        return service.cookingOrder(id);
+    }
+
     @PutMapping("/ready/{id}")
-    public KitchenOrderDTO readyOrder(@PathVariable Long id) {
-        return service.updateStatus(id, OrderStatus.READY);
+    public Order ready(@PathVariable Long id) {
+        return service.readyOrder(id);
     }
 
     @PutMapping("/served/{id}")
-    public KitchenOrderDTO servedOrder(@PathVariable Long id) {
-        return service.updateStatus(id, OrderStatus.SERVED);
+    public Order served(@PathVariable Long id) {
+        return service.servedOrder(id);
     }
 }
