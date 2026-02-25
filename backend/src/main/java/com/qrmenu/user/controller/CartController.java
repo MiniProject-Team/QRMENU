@@ -1,49 +1,41 @@
 package com.qrmenu.user.controller;
 
+import com.qrmenu.shared.model.Cart;
 import com.qrmenu.user.dto.CartRequestDTO;
 import com.qrmenu.user.service.CartService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/user/cart")
-@CrossOrigin("*")
 public class CartController {
 
-    @Autowired
-    private CartService cartService;
+    private final CartService cartService;
 
-    // ✅ Add item to cart
+    public CartController(CartService cartService) {
+        this.cartService = cartService;
+    }
+
+    // ✅ ADD TO CART
     @PostMapping("/add")
-    public ResponseEntity<?> addToCart(@RequestBody CartRequestDTO dto) {
-        return ResponseEntity.ok(cartService.addToCart(dto));
+    public ResponseEntity<Cart> addToCart(@RequestBody CartRequestDTO request) {
+        Cart response = cartService.addToCart(request);
+        return ResponseEntity.ok(response);
     }
 
-    // ✅ Get cart by table ID
-    @GetMapping("/table/{tableId}")
-    public ResponseEntity<?> getCartByTable(@PathVariable Long tableId) {
-        return ResponseEntity.ok(cartService.getCartByTable(tableId));
+    // ✅ GET CART BY TABLE ID
+    @GetMapping("/{tableId}")
+    public ResponseEntity<List<Cart>> getCartByTable(@PathVariable Long tableId) {
+        List<Cart> cartList = cartService.getCartByTable(tableId);
+        return ResponseEntity.ok(cartList);
     }
 
-    // ✅ Update quantity
-    @PutMapping("/update/{cartId}")
-    public ResponseEntity<?> updateQuantity(@PathVariable Long cartId,
-                                             @RequestParam int quantity) {
-        return ResponseEntity.ok(cartService.updateQuantity(cartId, quantity));
-    }
-
-    // ✅ Remove item from cart
-    @DeleteMapping("/remove/{id}")
-    public ResponseEntity<?> removeItem(@PathVariable Long id) {
-        cartService.removeItem(id);
+    // ✅ DELETE ITEM FROM CART
+    @DeleteMapping("/remove/{itemId}")
+    public ResponseEntity<String> removeFromCart(@PathVariable Long itemId) {
+        cartService.removeItem(itemId);
         return ResponseEntity.ok("Item removed from cart");
-    }
-
-    // ✅ Clear cart by table
-    @DeleteMapping("/clear/{tableId}")
-    public ResponseEntity<?> clearCart(@PathVariable Long tableId) {
-        cartService.clearCartByTable(tableId);
-        return ResponseEntity.ok("Cart cleared");
     }
 }

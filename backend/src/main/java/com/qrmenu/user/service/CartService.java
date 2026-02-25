@@ -37,8 +37,9 @@ public class CartService {
     }
 
     // Remove item
-    public void removeItem(Long id) {
-        cartRepository.deleteById(id);
+    public void removeItem(Long itemId) {
+        List<Cart> carts = cartRepository.findByItemId(itemId);
+        cartRepository.deleteAll(carts);
     }
 
     // Clear cart by table
