@@ -1,14 +1,14 @@
 package com.qrmenu.user.service;
 
 import com.qrmenu.shared.enums.OrderStatus;
-import com.qrmenu.shared.model.*;
-import com.qrmenu.shared.repository.*;
-import com.qrmenu.user.dto.*;
+import com.qrmenu.shared.model.Order;
+import com.qrmenu.shared.model.OrderItem;
+import com.qrmenu.shared.repository.OrderRepository;
+import com.qrmenu.user.dto.OrderRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -16,46 +16,28 @@ import java.util.List;
 public class UserOrderService {
 
     private final OrderRepository orderRepo;
-    private final TableRepository tableRepo;
-    private final MenuRepository menuRepo;
 
     public Order placeOrder(OrderRequest request) {
 
-        TableEntity table = tableRepo.findById(request.getTableId())
-                .orElseThrow();
-
-        Order order = new Order();
-        order.setTableEntity(table);
-        order.setStatus(OrderStatus.PLACED);
-        order.setCreatedAt(LocalDateTime.now());
-
-        List<OrderItem> orderItems = new ArrayList<>();
-
-        for (OrderItemRequest itemRequest : request.getItems()) {
-
-            MenuItem item = menuRepo.findById(itemRequest.getItemId())
-                    .orElseThrow();
-
-            OrderItem orderItem = new OrderItem();
-            orderItem.setMenuItem(item);
-            orderItem.setQuantity(itemRequest.getQuantity());
-            orderItem.setOrder(order);
-
-            orderItems.add(orderItem);
-        }
-
-        order.setItems(orderItems);
-
-        return orderRepo.save(order);
+    if (request.getItems() == null || request.getItems().isEmpty()) {
+        throw new RuntimeException("Cart is empty");
     }
 
-    public Order getOrder(Long orderId) {
-        return orderRepo.findById(orderId).orElseThrow();
-    }
+    Order order = new Order();
+    order.setTableId(request.getTableId());
+    order.setStatus(OrderStatus.PLACED);
+    order.setCreatedAt(LocalDateTime.now());
 
-    public void cancelOrder(Long orderId) {
-        Order order = orderRepo.findById(orderId).orElseThrow();
-        order.setStatus(OrderStatus.CANCELLED);
-        orderRepo.save(order);
-    }
+    List<OrderItem> items = request.getItems().stream().map(itemReq -> {
+        OrderItem item = new OrderItem();
+        item.setMenuItemId(itemReq.getItemId());
+        item.setQuantity(itemReq.getQuantity());
+        item.setOrder(order);
+        return item;
+    }).toList();
+
+    order.setItems(items);
+
+    return orderRepo.save(order);
+}
 }

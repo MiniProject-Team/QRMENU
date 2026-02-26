@@ -3,9 +3,8 @@ package com.qrmenu.shared.enums;
 public enum OrderStatus {
     PLACED,
     ACCEPTED,
-    COOKING,
+    PREPARING,
     READY,
     SERVED,
-    PAID,
     CANCELLED
 }

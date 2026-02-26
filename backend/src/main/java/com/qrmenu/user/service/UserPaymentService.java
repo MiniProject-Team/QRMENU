@@ -29,7 +29,7 @@ public class UserPaymentService {
 );
         payment.setStatus(PaymentStatus.SUCCESS);
 
-        order.setStatus(OrderStatus.PAID);
+        order.setStatus(OrderStatus.ACCEPTED); // or SERVED
         orderRepo.save(order);
 
         return paymentRepo.save(payment);

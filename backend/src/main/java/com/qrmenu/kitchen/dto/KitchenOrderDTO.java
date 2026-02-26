@@ -1,36 +1,43 @@
 package com.qrmenu.kitchen.dto;
 
-import com.qrmenu.shared.enums.OrderStatus;
-
-import java.time.LocalDateTime;
+import java.util.List;
 
 public class KitchenOrderDTO {
 
-    private Long id;
-    private OrderStatus status;
-    private LocalDateTime createdAt;
+    private Long orderId;
+    private String tableNumber;
+    private String status;
+    private List<String> items;
 
-    public Long getId() {
-        return id;
+    public Long getOrderId() {
+        return orderId;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setOrderId(Long orderId) {
+        this.orderId = orderId;
     }
 
-    public OrderStatus getStatus() {
+    public String getTableNumber() {
+        return tableNumber;
+    }
+
+    public void setTableNumber(String tableNumber) {
+        this.tableNumber = tableNumber;
+    }
+
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(OrderStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public List<String> getItems() {
+        return items;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setItems(List<String> items) {
+        this.items = items;
     }
 }
