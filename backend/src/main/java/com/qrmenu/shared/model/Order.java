@@ -2,9 +2,7 @@ package com.qrmenu.shared.model;
 
 import com.qrmenu.shared.enums.OrderStatus;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -15,55 +13,36 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private Long userId;
     private Long tableId;
+    private Double totalAmount;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> items = new ArrayList<>();
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> items;
 
-    // ===== GETTERS & SETTERS =====
-
-    public Long getId() {
-        return id;
+    public Order() {
+        this.createdAt = LocalDateTime.now();
+        this.status = OrderStatus.PENDING;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    // GETTERS SETTERS
+    public Long getId() { return id; }
+    public Long getUserId() { return userId; }
+    public Long getTableId() { return tableId; }
+    public Double getTotalAmount() { return totalAmount; }
+    public OrderStatus getStatus() { return status; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public List<OrderItem> getItems() { return items; }
 
-    public Long getTableId() {
-        return tableId;
-    }
-
-    public void setTableId(Long tableId) {
-        this.tableId = tableId;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(OrderStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public List<OrderItem> getItems() {
-        return items;
-    }
-
-    public void setItems(List<OrderItem> items) {
-        this.items = items;
-    }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public void setTableId(Long tableId) { this.tableId = tableId; }
+    public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+    public void setStatus(OrderStatus status) { this.status = status; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setItems(List<OrderItem> items) { this.items = items; }
 }

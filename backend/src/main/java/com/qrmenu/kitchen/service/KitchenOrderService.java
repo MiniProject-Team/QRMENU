@@ -24,18 +24,18 @@ public class KitchenOrderService {
     private final TableRepository tableRepo;
     private final MenuRepository menuRepo;
 
-    public List<KitchenOrderDTO> getActiveOrders() {
-        List<OrderStatus> activeStatuses = Arrays.asList(
-                OrderStatus.PLACED,
-                OrderStatus.ACCEPTED,
-                OrderStatus.PREPARING,
-                OrderStatus.READY
-        );
+   public List<KitchenOrderDTO> getActiveOrders() {
+    List<OrderStatus> active = List.of(
+            OrderStatus.PLACED,
+            OrderStatus.ACCEPTED,
+            OrderStatus.PREPARING
+    );
 
-        return orderRepo.findByStatusIn(activeStatuses).stream()
-                .map(this::toDto)
-                .toList();
-    }
+    return orderRepo.findByStatusIn(active)
+            .stream()
+            .map(this::convertToDTO)
+            .toList();
+}
 
     public Order acceptOrder(Long id) {
         return updateStatus(id, OrderStatus.ACCEPTED);
@@ -59,10 +59,12 @@ public class KitchenOrderService {
         return orderRepo.save(order);
     }
 
-    private KitchenOrderDTO toDto(Order order) {
-        KitchenOrderDTO dto = new KitchenOrderDTO();
-        dto.setOrderId(order.getId());
-
+    private KitchenOrderDTO convertToDTO(Order order) {
+    KitchenOrderDTO dto = new KitchenOrderDTO();
+    dto.setOrderId(order.getId());
+    dto.setStatus(order.getStatus().name());
+    dto.setTableId(order.getTableId());
+    
         String tableNumber = tableRepo.findById(order.getTableId())
                 .map(TableEntity::getTableNumber)
                 .orElse(String.valueOf(order.getTableId()));

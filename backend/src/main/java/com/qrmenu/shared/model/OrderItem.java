@@ -3,20 +3,26 @@ package com.qrmenu.shared.model;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "order_items")
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Menu Item ID (Foreign key manually store)
+    @Column(name = "menu_item_id")
     private Long menuItemId;
-    private int quantity;
 
-    @ManyToOne
+    private int quantity;
+    private double price;
+
+    // Many items belong to one order
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
 
-    // GETTERS & SETTERS
+    // ================= GETTERS & SETTERS =================
 
     public Long getId() {
         return id;
@@ -36,6 +42,14 @@ public class OrderItem {
 
     public void setQuantity(int quantity) {
         this.quantity = quantity;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
     }
 
     public Order getOrder() {

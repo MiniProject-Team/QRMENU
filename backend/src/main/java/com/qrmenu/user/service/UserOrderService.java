@@ -1,43 +1,49 @@
 package com.qrmenu.user.service;
 
-import com.qrmenu.shared.enums.OrderStatus;
 import com.qrmenu.shared.model.Order;
 import com.qrmenu.shared.model.OrderItem;
-import com.qrmenu.shared.repository.OrderRepository;
+import com.qrmenu.shared.enums.OrderStatus;
 import com.qrmenu.user.dto.OrderRequest;
-import lombok.RequiredArgsConstructor;
+import com.qrmenu.user.dto.OrderItemRequest;
+import com.qrmenu.shared.repository.OrderRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class UserOrderService {
 
-    private final OrderRepository orderRepo;
+    private final OrderRepository orderRepository;
 
-    public Order placeOrder(OrderRequest request) {
-
-    if (request.getItems() == null || request.getItems().isEmpty()) {
-        throw new RuntimeException("Cart is empty");
+    public UserOrderService(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
     }
 
-    Order order = new Order();
-    order.setTableId(request.getTableId());
-    order.setStatus(OrderStatus.PLACED);
-    order.setCreatedAt(LocalDateTime.now());
+    public Order placeOrder(OrderRequest request) {
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new RuntimeException("Cart is empty");
+        }
 
-    List<OrderItem> items = request.getItems().stream().map(itemReq -> {
-        OrderItem item = new OrderItem();
-        item.setMenuItemId(itemReq.getItemId());
-        item.setQuantity(itemReq.getQuantity());
-        item.setOrder(order);
-        return item;
-    }).toList();
+        Order order = new Order();
+        order.setUserId(request.getUserId());
+        order.setTableId(request.getTableId());
+        order.setStatus(OrderStatus.PLACED);
+        order.setCreatedAt(LocalDateTime.now());
 
-    order.setItems(items);
+        List<OrderItem> items = new ArrayList<>();
 
-    return orderRepo.save(order);
-}
+        for (OrderItemRequest itemReq : request.getItems()) {
+            OrderItem item = new OrderItem();
+            item.setMenuItemId(itemReq.getItemId());
+            item.setQuantity(itemReq.getQuantity());
+            item.setOrder(order);
+            items.add(item);
+        }
+
+        order.setItems(items);
+
+        return orderRepository.save(order);
+    }
 }
