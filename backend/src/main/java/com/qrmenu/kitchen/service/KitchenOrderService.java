@@ -1,5 +1,10 @@
 package com.qrmenu.kitchen.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.qrmenu.kitchen.dto.KitchenOrderDTO;
 import com.qrmenu.shared.enums.OrderStatus;
 import com.qrmenu.shared.model.MenuItem;
@@ -9,12 +14,8 @@ import com.qrmenu.shared.model.TableEntity;
 import com.qrmenu.shared.repository.MenuRepository;
 import com.qrmenu.shared.repository.OrderRepository;
 import com.qrmenu.shared.repository.TableRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -26,9 +27,11 @@ public class KitchenOrderService {
 
    public List<KitchenOrderDTO> getActiveOrders() {
     List<OrderStatus> active = List.of(
+            OrderStatus.PENDING,
             OrderStatus.PLACED,
             OrderStatus.ACCEPTED,
-            OrderStatus.PREPARING
+            OrderStatus.PREPARING,
+            OrderStatus.READY
     );
 
     return orderRepo.findByStatusIn(active)
@@ -60,25 +63,41 @@ public class KitchenOrderService {
     }
 
     private KitchenOrderDTO convertToDTO(Order order) {
+
     KitchenOrderDTO dto = new KitchenOrderDTO();
+
     dto.setOrderId(order.getId());
     dto.setStatus(order.getStatus().name());
     dto.setTableId(order.getTableId());
-    
-        String tableNumber = tableRepo.findById(order.getTableId())
-                .map(TableEntity::getTableNumber)
-                .orElse(String.valueOf(order.getTableId()));
-        dto.setTableNumber(tableNumber);
 
-        dto.setStatus(order.getStatus().name());
+    String tableNumber;
 
-        List<String> items = order.getItems().stream()
+if (order.getTableId() == null) {
+    tableNumber = "Unknown";
+} else {
+    tableNumber = tableRepo.findById(order.getTableId())
+            .map(TableEntity::getTableNumber)
+            .orElse(String.valueOf(order.getTableId()));
+}
+
+dto.setTableNumber(tableNumber);
+
+    // ✅ SAFE CHECK
+    if (order.getItems() != null) {
+
+        List<String> items = order.getItems()
+                .stream()
                 .map(this::formatItem)
                 .collect(Collectors.toList());
+
         dto.setItems(items);
 
-        return dto;
+    } else {
+        dto.setItems(List.of());
     }
+
+    return dto;
+}
 
     private String formatItem(OrderItem item) {
         String name = menuRepo.findById(item.getMenuItemId())
