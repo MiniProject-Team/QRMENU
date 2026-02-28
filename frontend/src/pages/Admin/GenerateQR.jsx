@@ -10,15 +10,54 @@ const GenerateQR = () => {
     fetchQRCodes();
   }, []);
 
+  const normalizeQr = (qr) => {
+    const rawCode = qr?.qrCode ?? qr?.qr_code ?? qr?.qrCodeBase64 ?? qr?.qr_code_base64;
+    const qrCode = rawCode && String(rawCode).trim();
+    const tableId =
+      qr?.tableId ??
+      qr?.table_id ??
+      qr?.id ??
+      qr?.tableID ??
+      null;
+    const tableNumber =
+      qr?.tableNumber ??
+      qr?.tableNo ??
+      qr?.table_no ??
+      qr?.table_number ??
+      null;
+    const qrUrl = qr?.qrUrl ?? qr?.qr_url ?? qr?.url ?? "";
+
+    let finalQrCode = qrCode || "";
+    if (finalQrCode && !finalQrCode.startsWith("data:image")) {
+      finalQrCode = `data:image/png;base64,${finalQrCode}`;
+    }
+
+    return {
+      tableId,
+      tableNumber,
+      qrUrl,
+      qrCode: finalQrCode,
+    };
+  };
+
   const fetchQRCodes = async () => {
     try {
       setLoading(true);
+      setGenerating(true);
       const res = await generateAllTableQRs();
-      setQrCodes(res.data);
+      const payload = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.qrCodes)
+        ? res.data.qrCodes
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+      setQrCodes(payload.map(normalizeQr));
     } catch (err) {
       console.error("Error fetching QR codes:", err);
     } finally {
       setLoading(false);
+      setGenerating(false);
     }
   };
 
@@ -59,18 +98,22 @@ const GenerateQR = () => {
         </div>
       ) : (
         <div style={styles.grid}>
-          {qrCodes.map((qr) => (
-            <div key={qr.tableId} style={styles.qrCard}>
+          {qrCodes.map((qr, index) => (
+            <div key={qr.tableId ?? qr.qrUrl ?? index} style={styles.qrCard}>
               <div style={styles.qrImage}>
-                <img 
-                  src={qr.qrCode} 
-                  alt={`Table ${getTableLabel(qr)}`}
-                  style={styles.qrImg}
-                />
+                {qr.qrCode ? (
+                  <img 
+                    src={qr.qrCode} 
+                    alt={`Table ${getTableLabel(qr)}`}
+                    style={styles.qrImg}
+                  />
+                ) : (
+                  <div style={styles.qrFallback}>QR unavailable</div>
+                )}
               </div>
               <div style={styles.tableInfo}>
                 <h3 style={styles.tableNumber}>Table {getTableLabel(qr)}</h3>
-                <p style={styles.qrUrl}>{qr.qrUrl}</p>
+                {qr.qrUrl ? <p style={styles.qrUrl}>{qr.qrUrl}</p> : null}
               </div>
             </div>
           ))}
@@ -188,6 +231,18 @@ const styles = {
     width: "180px",
     height: "180px",
     display: "block",
+  },
+  qrFallback: {
+    width: "180px",
+    height: "180px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#111827",
+    fontSize: "14px",
+    fontWeight: "600",
+    background: "#f3f4f6",
+    borderRadius: "8px",
   },
   tableInfo: {
     marginTop: "16px",
