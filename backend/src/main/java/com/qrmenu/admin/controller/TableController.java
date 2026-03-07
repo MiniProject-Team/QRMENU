@@ -20,6 +20,11 @@ public class TableController {
         return service.add(dto);
     }
 
+    @PutMapping("/update/{id}")
+    public TableEntity update(@PathVariable Long id, @RequestBody TableDTO dto) {
+        return service.update(id, dto);
+    }
+
     @GetMapping("/all")
     public List<TableEntity> all() {
         return service.getAll();

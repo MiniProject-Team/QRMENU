@@ -25,27 +25,26 @@ public class KitchenOrderService {
     private final TableRepository tableRepo;
     private final MenuRepository menuRepo;
 
-   public List<KitchenOrderDTO> getActiveOrders() {
-    List<OrderStatus> active = List.of(
-            OrderStatus.PENDING,
-            OrderStatus.PLACED,
-            OrderStatus.ACCEPTED,
-            OrderStatus.PREPARING,
-            OrderStatus.READY
-    );
+    public List<KitchenOrderDTO> getActiveOrders() {
+        List<OrderStatus> active = List.of(
+                OrderStatus.PLACED,
+                OrderStatus.ACCEPTED,
+                OrderStatus.COOKING,
+                OrderStatus.READY
+        );
 
-    return orderRepo.findByStatusIn(active)
-            .stream()
-            .map(this::convertToDTO)
-            .toList();
-}
+        return orderRepo.findByStatusIn(active)
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
+    }
 
     public Order acceptOrder(Long id) {
         return updateStatus(id, OrderStatus.ACCEPTED);
     }
 
     public Order cookingOrder(Long id) {
-        return updateStatus(id, OrderStatus.PREPARING);
+        return updateStatus(id, OrderStatus.COOKING);
     }
 
     public Order readyOrder(Long id) {
@@ -63,41 +62,33 @@ public class KitchenOrderService {
     }
 
     private KitchenOrderDTO convertToDTO(Order order) {
+        KitchenOrderDTO dto = new KitchenOrderDTO();
+        dto.setOrderId(order.getId());
+        dto.setStatus(order.getStatus().name());
+        dto.setTableId(order.getTableId());
 
-    KitchenOrderDTO dto = new KitchenOrderDTO();
+        String tableNumber;
+        if (order.getTableId() == null) {
+            tableNumber = "Unknown";
+        } else {
+            tableNumber = tableRepo.findById(order.getTableId())
+                    .map(t -> String.valueOf(t.getTableNumber()))
+                    .orElse(String.valueOf(order.getTableId()));
+        }
+        dto.setTableNumber(tableNumber);
 
-    dto.setOrderId(order.getId());
-    dto.setStatus(order.getStatus().name());
-    dto.setTableId(order.getTableId());
+        if (order.getItems() != null) {
+            List<String> items = order.getItems()
+                    .stream()
+                    .map(this::formatItem)
+                    .collect(Collectors.toList());
+            dto.setItems(items);
+        } else {
+            dto.setItems(List.of());
+        }
 
-    String tableNumber;
-
-if (order.getTableId() == null) {
-    tableNumber = "Unknown";
-} else {
-    tableNumber = tableRepo.findById(order.getTableId())
-            .map(TableEntity::getTableNumber)
-            .orElse(String.valueOf(order.getTableId()));
-}
-
-dto.setTableNumber(tableNumber);
-
-    // ✅ SAFE CHECK
-    if (order.getItems() != null) {
-
-        List<String> items = order.getItems()
-                .stream()
-                .map(this::formatItem)
-                .collect(Collectors.toList());
-
-        dto.setItems(items);
-
-    } else {
-        dto.setItems(List.of());
+        return dto;
     }
-
-    return dto;
-}
 
     private String formatItem(OrderItem item) {
         String name = menuRepo.findById(item.getMenuItemId())

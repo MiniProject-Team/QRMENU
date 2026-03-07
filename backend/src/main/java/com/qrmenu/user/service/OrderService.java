@@ -3,11 +3,9 @@ package com.qrmenu.user.service;
 import com.qrmenu.shared.model.Order;
 import com.qrmenu.shared.enums.OrderStatus;
 import com.qrmenu.shared.repository.OrderRepository;
-import com.qrmenu.user.dto.OrderRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -16,31 +14,21 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
-    // PLACE ORDER
-    public Order placeOrder(OrderRequest request) {
-        Order order = new Order();
-        order.setUserId(request.getUserId());
-        order.setTableId(request.getTableId());
-        order.setStatus(OrderStatus.PLACED);
-        order.setCreatedAt(LocalDateTime.now());
-
-        return orderRepository.save(order);
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
     }
 
-    // ORDER HISTORY
-    public List<Order> getOrderHistory(Long userId) {
-        return orderRepository.findByUserId(userId);
+    public Order getOrderById(Long id) {
+        return orderRepository.findById(id).orElseThrow();
     }
 
-    // TRACK ORDER
-    public Order trackOrder(Long orderId) {
-        return orderRepository.findById(orderId).orElseThrow();
+    public List<Order> getOrdersByStatus(OrderStatus status) {
+        return orderRepository.findByStatus(status);
     }
 
-    // CANCEL ORDER
-    public Order cancelOrder(Long orderId) {
+    public Order updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId).orElseThrow();
-        order.setStatus(OrderStatus.CANCELLED);
+        order.setStatus(status);
         return orderRepository.save(order);
     }
 }

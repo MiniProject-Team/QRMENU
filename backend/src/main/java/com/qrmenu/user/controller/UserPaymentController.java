@@ -17,4 +17,9 @@ public class UserPaymentController {
     public Payment pay(@RequestBody PaymentRequest request) {
         return service.pay(request);
     }
+
+    @GetMapping("/{orderId}")
+    public Payment getPayment(@PathVariable Long orderId) {
+        return service.getPaymentByOrderId(orderId);
+    }
 }

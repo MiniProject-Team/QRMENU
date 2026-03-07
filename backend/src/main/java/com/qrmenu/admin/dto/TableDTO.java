@@ -4,7 +4,6 @@ import lombok.Data;
 
 @Data
 public class TableDTO {
-
-    private String tableNumber;
+    private Integer tableNumber;
     private boolean active;
 }

@@ -1,12 +1,12 @@
 package com.qrmenu.shared.enums;
 
 public enum OrderStatus {
-
-    PENDING,   // 👈 ADD THIS
+    PENDING,
     PLACED,
     ACCEPTED,
-    PREPARING,
+    COOKING,
     READY,
     SERVED,
+    PAID,
     CANCELLED
 }

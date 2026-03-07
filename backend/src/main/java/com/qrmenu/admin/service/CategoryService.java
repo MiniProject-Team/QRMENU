@@ -15,10 +15,16 @@ public class CategoryService {
     private final CategoryRepository repo;
 
     public Category add(CategoryDTO dto) {
-
         Category c = new Category();
         c.setName(dto.getName());
+        c.setDescription(dto.getDescription());
+        return repo.save(c);
+    }
 
+    public Category update(Long id, CategoryDTO dto) {
+        Category c = repo.findById(id).orElseThrow();
+        c.setName(dto.getName());
+        c.setDescription(dto.getDescription());
         return repo.save(c);
     }
 

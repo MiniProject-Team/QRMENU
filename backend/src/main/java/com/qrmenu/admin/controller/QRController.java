@@ -41,11 +41,8 @@ public class QRController {
 
         Map<String, String> response = new HashMap<>();
         response.put("tableId", tableId.toString());
-        String tableNumber = table.getTableNumber();
-        if (tableNumber == null || tableNumber.isBlank()) {
-            tableNumber = table.getId().toString();
-        }
-        response.put("tableNumber", tableNumber);
+        Integer tableNumber = table.getTableNumber();
+        response.put("tableNumber", tableNumber != null ? tableNumber.toString() : table.getId().toString());
         response.put("qrUrl", qrUrl);
         response.put("qrCode", qrCodeBase64);
 
@@ -66,11 +63,8 @@ public class QRController {
 
                     Map<String, String> qrData = new HashMap<>();
                     qrData.put("tableId", table.getId().toString());
-                    String tableNumber = table.getTableNumber();
-                    if (tableNumber == null || tableNumber.isBlank()) {
-                        tableNumber = table.getId().toString();
-                    }
-                    qrData.put("tableNumber", tableNumber);
+                    Integer tableNumber = table.getTableNumber();
+                    qrData.put("tableNumber", tableNumber != null ? tableNumber.toString() : table.getId().toString());
                     qrData.put("qrUrl", qrUrl);
                     qrData.put("qrCode", qrCodeBase64);
                     return qrData;

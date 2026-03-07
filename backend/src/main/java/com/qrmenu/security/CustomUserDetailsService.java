@@ -7,7 +7,7 @@ import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,14 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
-                user.getRoles()
-                        .stream()
-                        .map(role ->
-                                new SimpleGrantedAuthority(
-                                        role.getName().name()   // ✅ ENUM → STRING
-                                )
-                        )
-                        .collect(Collectors.toList())
+                List.of(new SimpleGrantedAuthority(user.getRole().getName().name()))
         );
     }
 }

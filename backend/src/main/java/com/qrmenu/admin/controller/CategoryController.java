@@ -20,6 +20,11 @@ public class CategoryController {
         return service.add(dto);
     }
 
+    @PutMapping("/update/{id}")
+    public Category update(@PathVariable Long id, @RequestBody CategoryDTO dto) {
+        return service.update(id, dto);
+    }
+
     @GetMapping("/all")
     public List<Category> all() {
         return service.getAll();

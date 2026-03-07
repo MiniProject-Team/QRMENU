@@ -15,11 +15,16 @@ public class TableService {
     private final TableRepository repo;
 
     public TableEntity add(TableDTO dto) {
-
         TableEntity t = new TableEntity();
         t.setTableNumber(dto.getTableNumber());
         t.setActive(dto.isActive());
+        return repo.save(t);
+    }
 
+    public TableEntity update(Long id, TableDTO dto) {
+        TableEntity t = repo.findById(id).orElseThrow();
+        t.setTableNumber(dto.getTableNumber());
+        t.setActive(dto.isActive());
         return repo.save(t);
     }
 

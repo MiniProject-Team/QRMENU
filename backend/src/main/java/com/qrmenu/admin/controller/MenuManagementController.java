@@ -20,6 +20,11 @@ public class MenuManagementController {
         return service.addItem(dto);
     }
 
+    @PutMapping("/update/{id}")
+    public MenuItem update(@PathVariable Long id, @RequestBody MenuDTO dto) {
+        return service.updateItem(id, dto);
+    }
+
     @GetMapping("/all")
     public List<MenuItem> all() {
         return service.getAll();

@@ -3,95 +3,98 @@ package com.qrmenu.admin.service;
 import com.qrmenu.admin.dto.InventoryDTO;
 import com.qrmenu.admin.dto.InventoryResponseDTO;
 import com.qrmenu.admin.dto.StockUpdateDTO;
+import com.qrmenu.shared.model.Inventory;
+import com.qrmenu.shared.model.MenuItem;
+import com.qrmenu.shared.repository.InventoryRepository;
+import com.qrmenu.shared.repository.MenuRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class InventoryServiceImpl implements InventoryService {
 
-    // Temporary in-memory list for demo
-    private final List<InventoryResponseDTO> inventoryList = new ArrayList<>();
+    private final InventoryRepository inventoryRepo;
+    private final MenuRepository menuRepo;
 
     @Override
     public InventoryResponseDTO createInventory(InventoryDTO dto) {
-        InventoryResponseDTO response = InventoryResponseDTO.builder()
-                .id(dto.getId())
-                .menuItemId(dto.getMenuItemId())
-                .itemName(dto.getItemName())
-                .quantity(dto.getQuantity())
-                .lowStockThreshold(dto.getLowStockThreshold())
-                .available(dto.getAvailable())
-                .build();
-        inventoryList.add(response);
-        return response;
+        Inventory inv = new Inventory();
+        inv.setMenuItemId(dto.getMenuItemId());
+        inv.setStockQuantity(dto.getQuantity());
+        inv = inventoryRepo.save(inv);
+        return toResponse(inv);
     }
 
     @Override
     public List<InventoryResponseDTO> getAllInventory() {
-        return inventoryList;
+        return inventoryRepo.findAll().stream().map(this::toResponse).toList();
     }
 
     @Override
     public InventoryResponseDTO getInventoryById(Long id) {
-        return inventoryList.stream()
-                .filter(item -> item.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+        return toResponse(inventoryRepo.findById(id).orElseThrow());
     }
 
     @Override
     public InventoryResponseDTO updateInventory(Long id, InventoryDTO dto) {
-        InventoryResponseDTO existing = getInventoryById(id);
-        if (existing != null) {
-            existing.setItemName(dto.getItemName());
-            existing.setQuantity(dto.getQuantity());
-            existing.setLowStockThreshold(dto.getLowStockThreshold());
-            existing.setAvailable(dto.getAvailable());
-        }
-        return existing;
+        Inventory inv = inventoryRepo.findById(id).orElseThrow();
+        inv.setStockQuantity(dto.getQuantity());
+        inv = inventoryRepo.save(inv);
+        return toResponse(inv);
     }
 
     @Override
     public void addStock(Long id, StockUpdateDTO dto) {
-        InventoryResponseDTO item = getInventoryById(id);
-        if (item != null) {
-            item.setQuantity(item.getQuantity() + dto.getQuantity());
-        }
+        Inventory inv = inventoryRepo.findById(id).orElseThrow();
+        inv.setStockQuantity(inv.getStockQuantity() + dto.getQuantity());
+        inventoryRepo.save(inv);
     }
 
     @Override
     public void reduceStock(Long id, StockUpdateDTO dto) {
-        InventoryResponseDTO item = getInventoryById(id);
-        if (item != null) {
-            item.setQuantity(Math.max(0, item.getQuantity() - dto.getQuantity()));
-        }
+        Inventory inv = inventoryRepo.findById(id).orElseThrow();
+        inv.setStockQuantity(Math.max(0, inv.getStockQuantity() - dto.getQuantity()));
+        inventoryRepo.save(inv);
     }
 
     @Override
     public void toggleAvailability(Long id) {
-        InventoryResponseDTO item = getInventoryById(id);
+        Inventory inv = inventoryRepo.findById(id).orElseThrow();
+        MenuItem item = menuRepo.findById(inv.getMenuItemId()).orElse(null);
         if (item != null) {
-            item.setAvailable(!item.getAvailable());
+            item.setAvailable(!item.isAvailable());
+            menuRepo.save(item);
         }
     }
 
     @Override
     public void deleteInventory(Long id) {
-        inventoryList.removeIf(item -> item.getId().equals(id));
+        inventoryRepo.deleteById(id);
     }
 
     @Override
     public List<InventoryResponseDTO> getLowStockItems() {
-        List<InventoryResponseDTO> lowStock = new ArrayList<>();
-        for (InventoryResponseDTO item : inventoryList) {
-            if (item.getQuantity() <= item.getLowStockThreshold()) {
-                lowStock.add(item);
-            }
-        }
-        return lowStock;
+        return inventoryRepo.findByStockQuantityLessThan(10)
+                .stream().map(this::toResponse).toList();
+    }
+
+    private InventoryResponseDTO toResponse(Inventory inv) {
+        String itemName = menuRepo.findById(inv.getMenuItemId())
+                .map(MenuItem::getName).orElse("Unknown");
+        boolean available = menuRepo.findById(inv.getMenuItemId())
+                .map(MenuItem::isAvailable).orElse(false);
+
+        return InventoryResponseDTO.builder()
+                .id(inv.getId())
+                .menuItemId(inv.getMenuItemId())
+                .itemName(itemName)
+                .quantity(inv.getStockQuantity())
+                .lowStockThreshold(10)
+                .available(available)
+                .lowStock(inv.getStockQuantity() < 10)
+                .build();
     }
 }
