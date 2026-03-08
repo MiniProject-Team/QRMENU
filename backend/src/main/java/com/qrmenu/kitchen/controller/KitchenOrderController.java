@@ -2,7 +2,7 @@ package com.qrmenu.kitchen.controller;
 
 import com.qrmenu.kitchen.dto.KitchenOrderDTO;
 import com.qrmenu.kitchen.service.KitchenOrderService;
-import com.qrmenu.shared.model.Order;
+import com.qrmenu.user.dto.OrderResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,22 +21,27 @@ public class KitchenOrderController {
     }
 
     @PutMapping("/accept/{id}")
-    public Order accept(@PathVariable Long id) {
-        return service.acceptOrder(id);
+    public OrderResponse accept(@PathVariable Long id) {
+        return OrderResponse.from(service.acceptOrder(id));
     }
 
     @PutMapping("/cooking/{id}")
-    public Order cooking(@PathVariable Long id) {
-        return service.cookingOrder(id);
+    public OrderResponse cooking(@PathVariable Long id) {
+        return OrderResponse.from(service.cookingOrder(id));
     }
 
     @PutMapping("/ready/{id}")
-    public Order ready(@PathVariable Long id) {
-        return service.readyOrder(id);
+    public OrderResponse ready(@PathVariable Long id) {
+        return OrderResponse.from(service.readyOrder(id));
     }
 
     @PutMapping("/served/{id}")
-    public Order served(@PathVariable Long id) {
-        return service.servedOrder(id);
+    public OrderResponse served(@PathVariable Long id) {
+        return OrderResponse.from(service.servedOrder(id));
+    }
+
+    @PutMapping("/cancel/{id}")
+    public OrderResponse cancel(@PathVariable Long id) {
+        return OrderResponse.from(service.cancelOrder(id));
     }
 }

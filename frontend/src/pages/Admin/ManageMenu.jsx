@@ -1,9 +1,14 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import API from "../../api/axios";
+import OpsLayout from "../../components/ops/OpsLayout";
+
+const fmtCurrency = (value) => `Rs ${Number(value ?? 0).toLocaleString("en-IN")}`;
 
 const ManageMenu = () => {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -11,7 +16,6 @@ const ManageMenu = () => {
     categoryId: "",
     available: true,
   });
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchItems();
@@ -20,57 +24,44 @@ const ManageMenu = () => {
 
   const fetchItems = async () => {
     try {
+      setError("");
       const res = await API.get("/admin/menu/all");
       setItems(res.data || []);
     } catch (err) {
       console.error("Error fetching menu:", err);
-      // Demo data
-      setItems([
-        { id: 1, name: "Chicken Biryani", price: 250, category: { name: "Biryani" }, available: true },
-        { id: 2, name: "Paneer Tikka", price: 180, category: { name: "Curry" }, available: true },
-        { id: 3, name: "Butter Roti", price: 25, category: { name: "Breads" }, available: true },
-        { id: 4, name: "Masala Chai", price: 30, category: { name: "Beverages" }, available: false }
-      ]);
+      setItems([]);
+      setError("Unable to load menu items from the server.");
     }
   };
 
   const fetchCategories = async () => {
     try {
+      setError("");
       const res = await API.get("/admin/categories/all");
       setCategories(res.data || []);
     } catch (err) {
-      setCategories([
-        { id: 1, name: "Biryani" },
-        { id: 2, name: "Curry" },
-        { id: 3, name: "Breads" },
-        { id: 4, name: "Beverages" }
-      ]);
+      console.error("Error fetching categories:", err);
+      setCategories([]);
+      setError("Unable to load menu categories from the server.");
     }
   };
 
   const addItem = async () => {
-    if (!form.name || !form.price) return;
+    if (!form.name || !form.price || !form.categoryId) return;
+
     try {
       setLoading(true);
+      setError("");
       await API.post("/admin/menu/add", {
         ...form,
         price: parseFloat(form.price),
-        categoryId: parseInt(form.categoryId)
+        categoryId: parseInt(form.categoryId, 10),
       });
       setForm({ name: "", price: "", description: "", categoryId: "", available: true });
       fetchItems();
     } catch (err) {
-      // Demo: add locally
-      const cat = categories.find(c => c.id === parseInt(form.categoryId));
-      setItems([...items, { 
-        id: Date.now(), 
-        name: form.name, 
-        price: parseFloat(form.price),
-        description: form.description,
-        category: cat || { name: "Uncategorized" },
-        available: true 
-      }]);
-      setForm({ name: "", price: "", description: "", categoryId: "", available: true });
+      console.error("Error adding menu item:", err);
+      setError("Unable to add menu item right now.");
     } finally {
       setLoading(false);
     }
@@ -78,263 +69,349 @@ const ManageMenu = () => {
 
   const toggleAvailability = async (id) => {
     try {
+      setError("");
       await API.put(`/admin/menu/toggle/${id}`);
       fetchItems();
     } catch (err) {
-      setItems(items.map(item => item.id === id ? { ...item, available: !item.available } : item));
+      console.error("Error toggling menu item:", err);
+      setError("Unable to update menu item availability.");
     }
   };
 
   const deleteItem = async (id) => {
     try {
+      setError("");
       await API.delete(`/admin/menu/delete/${id}`);
       fetchItems();
     } catch (err) {
-      setItems(items.filter(item => item.id !== id));
+      console.error("Error deleting menu item:", err);
+      setError("Unable to delete menu item right now.");
     }
   };
 
+  const availableCount = items.filter((item) => item.available).length;
+  const unavailableCount = items.length - availableCount;
+
   return (
-    <div className="menu-page">
-      <style>{`
-        .menu-page {
-          min-height: 100vh;
-          background: #0a0a0f;
-          padding: 30px;
-          font-family: 'Inter', -apple-system, sans-serif;
-        }
-        .page-header {
-          margin-bottom: 32px;
-        }
-        .page-title {
-          color: #fff;
-          font-size: 1.75rem;
-          margin: 0 0 8px;
-          font-weight: 700;
-        }
-        .page-subtitle {
-          color: #666;
-          margin: 0;
-        }
-        
-        .add-form {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 20px;
-          padding: 24px;
-          margin-bottom: 32px;
-          border: 1px solid #222;
-        }
-        .form-title {
-          color: #fff;
-          font-size: 1.1rem;
-          margin: 0 0 16px;
-          font-weight: 600;
-        }
-        .form-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 12px;
-        }
-        .form-input {
-          padding: 12px 16px;
-          border-radius: 12px;
-          border: 1px solid #222;
-          background: #1a1a24;
-          color: #fff;
-          font-size: 0.95rem;
-        }
-        .form-input::placeholder { color: #555; }
-        .form-input:focus {
-          outline: none;
-          border-color: #6366f1;
-        }
-        .form-select {
-          padding: 12px 16px;
-          border-radius: 12px;
-          border: 1px solid #222;
-          background: #1a1a24;
-          color: #fff;
-          font-size: 0.95rem;
-        }
-        .add-btn {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-        .add-btn:hover { transform: translateY(-2px); }
-        
-        .menu-stats {
-          display: flex;
-          gap: 20px;
-          margin-bottom: 24px;
-          flex-wrap: wrap;
-        }
-        .stat-chip {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          padding: 12px 20px;
-          border-radius: 12px;
-          border: 1px solid #222;
-          color: #888;
-        }
-        .stat-chip span { color: #fff; font-weight: 600; }
-        
-        .menu-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 20px;
-        }
-        .menu-card {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 20px;
-          padding: 20px;
-          border: 1px solid #222;
-          display: flex;
-          gap: 16px;
-        }
-        .menu-card.unavailable { opacity: 0.5; }
-        .menu-img {
-          width: 70px;
-          height: 70px;
-          border-radius: 14px;
-          background: #1a1a24;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.8rem;
-          flex-shrink: 0;
-        }
-        .menu-details { flex: 1; }
-        .menu-name {
-          color: #fff;
-          font-weight: 600;
-          margin: 0 0 6px;
-        }
-        .menu-cat {
-          color: #6366f1;
-          font-size: 0.85rem;
-          margin: 0 0 8px;
-        }
-        .menu-price {
-          color: #10b981;
-          font-weight: 700;
-          font-size: 1.1rem;
-        }
-        .menu-actions {
-          display: flex;
-          gap: 8px;
-          margin-top: 12px;
-        }
-        .action-btn {
-          padding: 8px 14px;
-          border: none;
-          border-radius: 10px;
-          font-size: 0.85rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-        .toggle-btn {
-          background: rgba(99, 102, 241, 0.1);
-          color: #6366f1;
-        }
-        .toggle-btn:hover { background: #6366f1; color: white; }
-        .delete-btn {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-        }
-        .delete-btn:hover { background: #ef4444; color: white; }
-        
-        .empty-state {
-          text-align: center;
-          padding: 60px 20px;
-          color: #555;
-        }
-      `}</style>
+    <OpsLayout
+      title="Menu Management"
+      subtitle="Create, organize, and control availability for the dishes visible to customers."
+      eyebrow="Admin / Menu"
+      role="admin"
+      badge={`${items.length} items`}
+      actions={
+        <button className="ops-primary-btn" onClick={addItem} disabled={loading || !form.name || !form.price || !form.categoryId}>
+          {loading ? "Saving..." : "Add item"}
+        </button>
+      }
+    >
+      <style>{CSS}</style>
 
-      <div className="page-header">
-        <h1 className="page-title">Manage Menu</h1>
-        <p className="page-subtitle">Add, edit, or remove menu items</p>
-      </div>
+      <section className="admin-grid">
+        <article className="panel-card tall">
+          <div className="panel-headline">
+            <h3>Add or update menu items</h3>
+            <p>Use one structured form to keep pricing, descriptions, and categories consistent.</p>
+          </div>
 
-      <div className="add-form">
-        <h3 className="form-title">Add New Item</h3>
-        <div className="form-grid">
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Item name..."
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-          />
-          <input
-            type="number"
-            className="form-input"
-            placeholder="Price (₹)"
-            value={form.price}
-            onChange={(e) => setForm({ ...form, price: e.target.value })}
-          />
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Description..."
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-          <select
-            className="form-select"
-            value={form.categoryId}
-            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-          >
-            <option value="">Select Category</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
-          <button className="add-btn" onClick={addItem} disabled={loading || !form.name || !form.price}>
-            {loading ? 'Adding...' : '+ Add Item'}
-          </button>
+          <div className="form-grid">
+            <label className="field">
+              <span>Item name</span>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Butter Chicken" />
+            </label>
+
+            <label className="field">
+              <span>Price</span>
+              <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="320" />
+            </label>
+
+            <label className="field">
+              <span>Category</span>
+              <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
+                <option value="">Select category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field field-wide">
+              <span>Description</span>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Short dish description for guests and staff."
+              />
+            </label>
+          </div>
+        </article>
+
+        <article className="stats-panel">
+          <div className="stat-card">
+            <span>Total menu items</span>
+            <strong>{items.length}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Available now</span>
+            <strong>{availableCount}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Unavailable</span>
+            <strong>{unavailableCount}</strong>
+          </div>
+        </article>
+      </section>
+
+      <section className="panel-card">
+        <div className="panel-headline row">
+          <div>
+            <h3>Current menu catalog</h3>
+            <p>Toggle visibility instantly when an item goes out of stock or comes back online.</p>
+          </div>
         </div>
-      </div>
 
-      <div className="menu-stats">
-        <div className="stat-chip">Total: <span>{items.length}</span></div>
-        <div className="stat-chip">Available: <span style={{ color: '#10b981' }}>{items.filter(i => i.available).length}</span></div>
-        <div className="stat-chip">Unavailable: <span style={{ color: '#ef4444' }}>{items.filter(i => !i.available).length}</span></div>
-      </div>
+        {error ? <div className="error-state">{error}</div> : null}
 
-      {items.length === 0 ? (
-        <div className="empty-state">
-          <p>No menu items yet</p>
-        </div>
-      ) : (
-        <div className="menu-grid">
-          {items.map(item => (
-            <div key={item.id} className={`menu-card ${!item.available ? 'unavailable' : ''}`}>
-              <div className="menu-img">🍽️</div>
-              <div className="menu-details">
-                <h3 className="menu-name">{item.name}</h3>
-                <p className="menu-cat">{item.category?.name || "Uncategorized"}</p>
-                <p className="menu-price">₹{item.price}</p>
-                <div className="menu-actions">
-                  <button className="action-btn toggle-btn" onClick={() => toggleAvailability(item.id)}>
-                    {item.available ? 'Disable' : 'Enable'}
-                  </button>
-                  <button className="action-btn delete-btn" onClick={() => deleteItem(item.id)}>
-                    Delete
-                  </button>
+        {items.length === 0 ? (
+          <div className="empty-state">No menu items available yet.</div>
+        ) : (
+          <div className="menu-grid">
+            {items.map((item) => (
+              <article key={item.id} className={`menu-card ${item.available ? "" : "muted"}`}>
+                <div className="menu-card-head">
+                  <div>
+                    <span className="menu-tag">{item.category?.name || "Uncategorized"}</span>
+                    <h4>{item.name}</h4>
+                  </div>
+                  <span className={`status-dot ${item.available ? "live" : "off"}`}>{item.available ? "Live" : "Off"}</span>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+
+                <p>{item.description || "No description added yet."}</p>
+
+                <div className="menu-card-foot">
+                  <strong>{fmtCurrency(item.price)}</strong>
+                  <div className="action-row">
+                    <button className="secondary-btn" onClick={() => toggleAvailability(item.id)}>
+                      {item.available ? "Disable" : "Enable"}
+                    </button>
+                    <button className="danger-btn-inline" onClick={() => deleteItem(item.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </OpsLayout>
   );
 };
+
+const CSS = `
+  .ops-primary-btn,
+  .secondary-btn,
+  .danger-btn-inline {
+    border: none;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .ops-primary-btn {
+    background: #17212b;
+    color: #fff;
+  }
+
+  .admin-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) 280px;
+    gap: 18px;
+  }
+
+  .panel-card,
+  .stats-panel {
+    padding: 22px;
+    border-radius: 24px;
+    background: rgba(255, 252, 246, 0.84);
+    border: 1px solid rgba(23, 33, 43, 0.08);
+    box-shadow: 0 24px 80px rgba(77, 56, 20, 0.09);
+  }
+
+  .tall { min-height: 320px; }
+
+  .panel-headline h3 {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+  }
+
+  .panel-headline p,
+  .menu-card p,
+  .empty-state,
+  .field span,
+  .stat-card span {
+    color: #6d7785;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .form-grid {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .field {
+    display: grid;
+    gap: 8px;
+    font-size: 0.86rem;
+    font-weight: 700;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    border: 1px solid rgba(23, 33, 43, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.74);
+    padding: 14px 15px;
+    font: inherit;
+    color: #17212b;
+  }
+
+  .field textarea {
+    min-height: 110px;
+    resize: vertical;
+  }
+
+  .field-wide {
+    grid-column: 1 / -1;
+  }
+
+  .stats-panel {
+    display: grid;
+    gap: 14px;
+  }
+
+  .stat-card {
+    padding: 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(23, 33, 43, 0.08);
+  }
+
+  .stat-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 2rem;
+    letter-spacing: -0.05em;
+  }
+
+  .menu-grid {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 14px;
+  }
+
+  .menu-card {
+    padding: 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(23, 33, 43, 0.08);
+    display: grid;
+    gap: 14px;
+  }
+
+  .menu-card.muted {
+    opacity: 0.72;
+  }
+
+  .menu-card-head,
+  .menu-card-foot,
+  .action-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .menu-card h4 {
+    margin: 8px 0 0;
+    font-size: 1.05rem;
+  }
+
+  .menu-tag,
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .menu-tag {
+    background: rgba(23, 33, 43, 0.06);
+    color: #6d7785;
+  }
+
+  .status-dot.live {
+    background: rgba(53, 197, 138, 0.14);
+    color: #1b8f61;
+  }
+
+  .status-dot.off {
+    background: rgba(239, 107, 115, 0.14);
+    color: #b4434b;
+  }
+
+  .secondary-btn {
+    background: #17212b;
+    color: #fff;
+  }
+
+  .danger-btn-inline {
+    background: #f4ded6;
+    color: #9b3e3e;
+  }
+
+  .empty-state {
+    padding: 28px 0 8px;
+    text-align: center;
+  }
+
+  .error-state {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 244, 244, 0.92);
+    border: 1px solid rgba(180, 67, 75, 0.18);
+    color: #b4434b;
+  }
+
+  @media (max-width: 980px) {
+    .admin-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+`;
 
 export default ManageMenu;

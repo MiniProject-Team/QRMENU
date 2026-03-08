@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import API from "../../api/axios";
+import OpsLayout from "../../components/ops/OpsLayout";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchCategories();
@@ -12,17 +14,13 @@ const Categories = () => {
 
   const fetchCategories = async () => {
     try {
+      setError("");
       const res = await API.get("/admin/categories/all");
       setCategories(res.data || []);
     } catch (err) {
       console.error("Error fetching categories:", err);
-      // Demo data
-      setCategories([
-        { id: 1, name: "Biryani", itemCount: 8 },
-        { id: 2, name: "Curry", itemCount: 12 },
-        { id: 3, name: "Breads", itemCount: 6 },
-        { id: 4, name: "Beverages", itemCount: 10 }
-      ]);
+      setCategories([]);
+      setError("Unable to load categories from the server.");
     }
   };
 
@@ -30,13 +28,13 @@ const Categories = () => {
     if (!name.trim()) return;
     try {
       setLoading(true);
+      setError("");
       await API.post("/admin/categories/add", { name });
       setName("");
       fetchCategories();
     } catch (err) {
-      // Demo: add locally
-      setCategories([...categories, { id: Date.now(), name, itemCount: 0 }]);
-      setName("");
+      console.error("Error adding category:", err);
+      setError("Unable to add category. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -44,175 +42,162 @@ const Categories = () => {
 
   const deleteCategory = async (id) => {
     try {
+      setError("");
       await API.delete(`/admin/categories/delete/${id}`);
       fetchCategories();
     } catch (err) {
-      setCategories(categories.filter(c => c.id !== id));
+      console.error("Error deleting category:", err);
+      setError("Unable to delete category right now.");
     }
   };
 
   return (
-    <div className="categories-page">
-      <style>{`
-        .categories-page {
-          min-height: 100vh;
-          background: #0a0a0f;
-          padding: 30px;
-          font-family: 'Inter', -apple-system, sans-serif;
-        }
-        .page-header {
-          margin-bottom: 32px;
-        }
-        .page-title {
-          color: #fff;
-          font-size: 1.75rem;
-          margin: 0 0 8px;
-          font-weight: 700;
-        }
-        .page-subtitle {
-          color: #666;
-          margin: 0;
-        }
-        .add-form {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 20px;
-          padding: 24px;
-          margin-bottom: 32px;
-          border: 1px solid #222;
-        }
-        .form-title {
-          color: #fff;
-          font-size: 1.1rem;
-          margin: 0 0 16px;
-          font-weight: 600;
-        }
-        .input-group {
-          display: flex;
-          gap: 12px;
-        }
-        .form-input {
-          flex: 1;
-          padding: 14px 20px;
-          border-radius: 14px;
-          border: 1px solid #222;
-          background: #1a1a24;
-          color: #fff;
-          font-size: 1rem;
-        }
-        .form-input::placeholder { color: #555; }
-        .form-input:focus {
-          outline: none;
-          border-color: #6366f1;
-        }
-        .add-btn {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
-          border: none;
-          padding: 14px 28px;
-          border-radius: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-        .add-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3); }
-        .add-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        
-        .categories-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 20px;
-        }
-        .category-card {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 20px;
-          padding: 24px;
-          border: 1px solid #222;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .cat-info h3 {
-          color: #fff;
-          font-size: 1.2rem;
-          margin: 0 0 8px;
-          font-weight: 600;
-        }
-        .cat-count {
-          color: #666;
-          font-size: 0.9rem;
-        }
-        .cat-count span {
-          color: #6366f1;
-          font-weight: 600;
-        }
-        .delete-btn {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-          border: none;
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          cursor: pointer;
-          font-size: 1.2rem;
-          transition: 0.2s;
-        }
-        .delete-btn:hover {
-          background: #ef4444;
-          color: white;
-        }
-        
-        .empty-state {
-          text-align: center;
-          padding: 60px 20px;
-          color: #555;
-        }
-        .empty-icon { font-size: 3rem; margin-bottom: 16px; }
-      `}</style>
+    <OpsLayout
+      title="Category Library"
+      subtitle="Keep menu sections clean and predictable for guests, staff, and reporting."
+      eyebrow="Admin / Categories"
+      role="admin"
+      badge={`${categories.length} categories`}
+      actions={
+        <button className="ops-primary-btn" onClick={addCategory} disabled={loading || !name.trim()}>
+          {loading ? "Saving..." : "Add category"}
+        </button>
+      }
+    >
+      <style>{CSS}</style>
 
-      <div className="page-header">
-        <h1 className="page-title">Categories</h1>
-        <p className="page-subtitle">Manage your menu categories</p>
-      </div>
-
-      <div className="add-form">
-        <h3 className="form-title">Add New Category</h3>
-        <div className="input-group">
-          <input
-            type="text"
-            className="form-input"
-            placeholder="Category name..."
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && addCategory()}
-          />
-          <button className="add-btn" onClick={addCategory} disabled={loading || !name.trim()}>
-            {loading ? 'Adding...' : '+ Add'}
-          </button>
+      <section className="panel-card setup-panel">
+        <div className="panel-copy">
+          <h3>Category setup</h3>
+          <p>Use broad, staff-friendly category names so menu filtering and reporting stay readable.</p>
         </div>
-      </div>
-
-      {categories.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📁</div>
-          <p>No categories yet</p>
+        <div className="input-row">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter category name" />
         </div>
-      ) : (
-        <div className="categories-grid">
-          {categories.map(cat => (
-            <div key={cat.id} className="category-card">
-              <div className="cat-info">
-                <h3>{cat.name}</h3>
-                <p className="cat-count"><span>{cat.itemCount || 0}</span> items</p>
+      </section>
+
+      {error ? <section className="panel-card error-state">{error}</section> : null}
+
+      <section className="category-grid">
+        {categories.length === 0 ? (
+          <article className="panel-card empty-state">No categories added yet.</article>
+        ) : (
+          categories.map((category) => (
+            <article key={category.id} className="panel-card category-card">
+              <div>
+                <span className="category-pill">Category</span>
+                <h3>{category.name}</h3>
+                <p>{category.itemCount || 0} items currently assigned</p>
               </div>
-              <button className="delete-btn" onClick={() => deleteCategory(cat.id)}>
-                ×
+              <button className="danger-btn-inline" onClick={() => deleteCategory(category.id)}>
+                Delete
               </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            </article>
+          ))
+        )}
+      </section>
+    </OpsLayout>
   );
 };
+
+const CSS = `
+  .ops-primary-btn,
+  .danger-btn-inline {
+    border: none;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .ops-primary-btn {
+    background: #17212b;
+    color: #fff;
+  }
+
+  .danger-btn-inline {
+    background: #f4ded6;
+    color: #9b3e3e;
+  }
+
+  .panel-card {
+    padding: 22px;
+    border-radius: 24px;
+    background: rgba(255, 252, 246, 0.84);
+    border: 1px solid rgba(23, 33, 43, 0.08);
+    box-shadow: 0 24px 80px rgba(77, 56, 20, 0.09);
+  }
+
+  .setup-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+    align-items: end;
+  }
+
+  .panel-copy h3,
+  .category-card h3 {
+    margin: 0 0 8px;
+  }
+
+  .panel-copy p,
+  .category-card p {
+    margin: 0;
+    color: #6d7785;
+    line-height: 1.6;
+  }
+
+  .input-row input {
+    width: 100%;
+    border: 1px solid rgba(23, 33, 43, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.74);
+    padding: 14px 15px;
+    font: inherit;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .category-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .category-pill {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(23, 33, 43, 0.06);
+    color: #6d7785;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .empty-state {
+    text-align: center;
+  }
+
+  .error-state {
+    color: #b4434b;
+    background: rgba(255, 244, 244, 0.92);
+    border-color: rgba(180, 67, 75, 0.18);
+  }
+
+  @media (max-width: 900px) {
+    .setup-panel {
+      grid-template-columns: 1fr;
+    }
+  }
+`;
 
 export default Categories;

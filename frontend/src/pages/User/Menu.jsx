@@ -1,511 +1,690 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import API from "../../api/axios";
+import GuestMobileNav from "../../components/GuestMobileNav";
+import { loadGuestCart, saveGuestCart } from "../../utils/guestFlow";
+
+const fmtCurrency = (value) => `Rs ${Number(value ?? 0).toLocaleString("en-IN")}`;
+
+const getCategoryName = (item) => (typeof item.category === "object" ? item.category?.name : item.category) || "Specials";
 
 const Menu = () => {
   const { tableId } = useParams();
   const navigate = useNavigate();
+  const storedCart = loadGuestCart(tableId);
 
   const [items, setItems] = useState([]);
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(storedCart.items || []);
   const [activeCategory, setActiveCategory] = useState("all");
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchMenu();
   }, [tableId]);
 
+  useEffect(() => {
+    const stored = loadGuestCart(tableId);
+    setCart(stored.items || []);
+  }, [tableId]);
+
+  useEffect(() => {
+    saveGuestCart({ tableId, items: cart });
+  }, [cart, tableId]);
+
   const fetchMenu = async () => {
     try {
       setLoading(true);
+      setError("");
       const res = await API.get("/user/menu");
-      setItems(res.data);
+      const data = Array.isArray(res.data) ? res.data : [];
+      setItems(data);
 
-      const uniqueCategories = [
-        ...new Set(
-          res.data
-            .map(item =>
-              typeof item.category === "object"
-                ? item.category.name
-                : item.category
-            )
-            .filter(Boolean)
-        )
-      ];
-
+      const uniqueCategories = [...new Set(data.map(getCategoryName).filter(Boolean))];
       setCategories(["all", ...uniqueCategories]);
     } catch (err) {
       console.error("Error fetching menu:", err);
+      setItems([]);
+      setCategories(["all"]);
+      setError("Unable to load the menu right now.");
     } finally {
       setLoading(false);
     }
   };
 
   const addToCart = (item) => {
-    const existing = cart.find(i => i.id === item.id);
+    const existing = cart.find((entry) => entry.id === item.id);
     if (existing) {
-      setCart(cart.map(i =>
-        i.id === item.id
-          ? { ...i, quantity: i.quantity + 1 }
-          : i
-      ));
-    } else {
-      setCart([...cart, { ...item, quantity: 1 }]);
+      setCart((current) =>
+        current.map((entry) => (entry.id === item.id ? { ...entry, quantity: entry.quantity + 1 } : entry))
+      );
+      return;
     }
+
+    setCart((current) => [...current, { ...item, quantity: 1 }]);
   };
 
   const removeFromCart = (itemId) => {
-    const existing = cart.find(i => i.id === itemId);
-    if (existing && existing.quantity > 1) {
-      setCart(cart.map(i =>
-        i.id === itemId
-          ? { ...i, quantity: i.quantity - 1 }
-          : i
-      ));
-    } else {
-      setCart(cart.filter(i => i.id !== itemId));
+    const existing = cart.find((entry) => entry.id === itemId);
+    if (!existing) return;
+
+    if (existing.quantity > 1) {
+      setCart((current) =>
+        current.map((entry) => (entry.id === itemId ? { ...entry, quantity: entry.quantity - 1 } : entry))
+      );
+      return;
     }
+
+    setCart((current) => current.filter((entry) => entry.id !== itemId));
   };
 
-  const getCartTotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
+  const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
+  const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
 
-  const filteredItems = items.filter(item => {
-    const itemCategory = typeof item.category === "object" ? item.category.name : item.category;
+  const filteredItems = items.filter((item) => {
+    const itemCategory = getCategoryName(item);
     const matchesCategory = activeCategory === "all" || itemCategory === activeCategory;
     const matchesSearch = item.name?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
+  const featuredItems = filteredItems.slice(0, 3);
+  const tableLabel = tableId ? `Table ${tableId}` : "Walk-in menu";
+
   return (
-    <div className="menu-page">
-      <style>{`
-        .menu-page {
-          min-height: 100vh;
-          background: #0a0a0f;
-          font-family: 'Inter', -apple-system, sans-serif;
-          padding-bottom: 100px;
-        }
+    <div className="guest-shell">
+      <style>{CSS}</style>
 
-        .menu-hero {
-          background: linear-gradient(135deg, #1e1e2f 0%, #0d0d14 100%);
-          padding: 40px 20px;
-          text-align: center;
-          position: relative;
-          overflow: hidden;
-        }
+      <header className="guest-hero">
+        <div className="hero-copy">
+          <p className="hero-kicker">QR dining menu</p>
+          <h1>Choose dishes, review the order, and send it straight to the kitchen.</h1>
+          <p className="hero-text">
+            Browse the full card, filter by section, and build the table order without waiting for printed menus.
+          </p>
 
-        .menu-hero::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
-          animation: rotate 20s linear infinite;
-        }
-
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .hero-content {
-          position: relative;
-          z-index: 1;
-        }
-
-        .hero-title {
-          color: #fff;
-          font-size: 2.5rem;
-          margin: 0 0 8px;
-          font-weight: 800;
-          letter-spacing: -1px;
-        }
-
-        .hero-subtitle {
-          color: #888;
-          margin: 0;
-          font-size: 1rem;
-        }
-
-        .table-tag {
-          display: inline-block;
-          background: rgba(99, 102, 241, 0.2);
-          color: #818cf8;
-          padding: 8px 20px;
-          border-radius: 20px;
-          margin-top: 16px;
-          font-weight: 600;
-        }
-
-        .search-container {
-          padding: 20px;
-          background: #0a0a0f;
-          position: sticky;
-          top: 0;
-          z-index: 100;
-        }
-
-        .search-box {
-          max-width: 500px;
-          margin: 0 auto;
-          position: relative;
-        }
-
-        .search-input {
-          width: 100%;
-          padding: 16px 24px 16px 50px;
-          border-radius: 16px;
-          border: 1px solid #222;
-          background: #15151f;
-          color: #fff;
-          font-size: 1rem;
-        }
-
-        .search-input::placeholder { color: #555; }
-        .search-input:focus {
-          outline: none;
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        .search-icon {
-          position: absolute;
-          left: 18px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #555;
-          font-size: 1.2rem;
-        }
-
-        .category-scroll {
-          display: flex;
-          gap: 10px;
-          padding: 0 20px 20px;
-          overflow-x: auto;
-          background: #0a0a0f;
-        }
-
-        .category-chip {
-          padding: 10px 20px;
-          border-radius: 24px;
-          border: none;
-          background: #15151f;
-          color: #888;
-          cursor: pointer;
-          white-space: nowrap;
-          font-weight: 600;
-          font-size: 0.9rem;
-          transition: all 0.2s;
-          border: 1px solid #222;
-        }
-
-        .category-chip:hover {
-          background: #1a1a28;
-          color: #fff;
-        }
-
-        .category-chip.active {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
-          border-color: transparent;
-        }
-
-        .menu-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
-          padding: 20px;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .menu-card {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 20px;
-          overflow: hidden;
-          border: 1px solid #1a1a24;
-          transition: all 0.3s;
-        }
-
-        .menu-card:hover {
-          transform: translateY(-4px);
-          border-color: #2a2a3a;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-
-        .card-image {
-          height: 160px;
-          background: linear-gradient(135deg, #1e1e2f, #15151f);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 3rem;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .card-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .card-content {
-          padding: 20px;
-        }
-
-        .card-name {
-          color: #fff;
-          font-size: 1.1rem;
-          font-weight: 700;
-          margin: 0 0 8px;
-        }
-
-        .card-desc {
-          color: #666;
-          font-size: 0.85rem;
-          margin: 0 0 16px;
-          line-height: 1.5;
-        }
-
-        .card-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .card-price {
-          color: #10b981;
-          font-size: 1.25rem;
-          font-weight: 700;
-        }
-
-        .add-btn {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          border: none;
-          color: white;
-          padding: 10px 20px;
-          border-radius: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .add-btn:hover {
-          transform: scale(1.05);
-          box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-        }
-
-        .qty-box {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          background: #1a1a28;
-          padding: 6px 12px;
-          border-radius: 12px;
-        }
-
-        .qty-btn {
-          width: 28px;
-          height: 28px;
-          border-radius: 8px;
-          border: none;
-          background: #252532;
-          color: #fff;
-          cursor: pointer;
-          font-size: 1.1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: 0.2s;
-        }
-
-        .qty-btn:hover { background: #6366f1; }
-        .qty-num { color: #fff; font-weight: 600; min-width: 20px; text-align: center; }
-
-        .cart-bar {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          padding: 16px 20px;
-          border-top: 1px solid #222;
-          z-index: 200;
-        }
-
-        .cart-content {
-          max-width: 1200px;
-          margin: 0 auto;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .cart-info {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .cart-count {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-        }
-
-        .cart-total {
-          color: #fff;
-          font-weight: 700;
-        }
-
-        .cart-total span {
-          color: #10b981;
-          margin-left: 8px;
-        }
-
-        .view-cart-btn {
-          background: linear-gradient(135deg, #10b981, #059669);
-          border: none;
-          color: white;
-          padding: 14px 28px;
-          border-radius: 14px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .view-cart-btn:hover {
-          transform: scale(1.02);
-          box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
-        }
-
-        .loading {
-          text-align: center;
-          padding: 60px 20px;
-          color: #666;
-        }
-
-        .empty {
-          text-align: center;
-          padding: 60px 20px;
-          color: #555;
-        }
-
-        .empty-icon { font-size: 3rem; margin-bottom: 16px; }
-
-        @media (max-width: 640px) {
-          .hero-title { font-size: 1.8rem; }
-          .menu-grid { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
-      <div className="menu-hero">
-        <div className="hero-content">
-          <h1 className="hero-title">Our Menu</h1>
-          <p className="hero-subtitle">Fresh & delicious food awaits</p>
-          <div className="table-tag">Table {tableId}</div>
+          <div className="hero-meta">
+            <span className="table-pill">{tableLabel}</span>
+            <span className="hero-note">{items.length} dishes loaded</span>
+          </div>
         </div>
-      </div>
 
-      <div className="search-container">
-        <div className="search-box">
-          <span className="search-icon">🔍</span>
+        <div className="hero-panel">
+          <span className="panel-label">House picks</span>
+          <div className="feature-list">
+            {featuredItems.length === 0 ? (
+              <div className="feature-card muted">
+                <strong>Menu unavailable</strong>
+                <span>Try refreshing when the kitchen catalog is back online.</span>
+              </div>
+            ) : (
+              featuredItems.map((item) => (
+                <div key={item.id} className="feature-card">
+                  <strong>{item.name}</strong>
+                  <span>{fmtCurrency(item.price)}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </header>
+
+      <section className="control-bar">
+        <label className="search-field">
+          <span>Search</span>
           <input
             type="text"
-            className="search-input"
-            placeholder="Search dishes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search for dishes, drinks, or desserts"
           />
+        </label>
+        <div className="quick-stats">
+          <div className="stat-pill">
+            <strong>{categories.length > 0 ? categories.length - 1 : 0}</strong>
+            <span>categories</span>
+          </div>
+          <div className="stat-pill">
+            <strong>{filteredItems.length}</strong>
+            <span>visible</span>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="category-scroll">
-        {categories.map(cat => (
+      <section className="chip-row">
+        {categories.map((category) => (
           <button
-            key={cat}
-            className={`category-chip ${activeCategory === cat ? "active" : ""}`}
-            onClick={() => setActiveCategory(cat)}
+            key={category}
+            className={`chip ${activeCategory === category ? "active" : ""}`}
+            onClick={() => setActiveCategory(category)}
           >
-            {cat === "all" ? "🍴 All" : cat}
+            {category === "all" ? "All items" : category}
           </button>
         ))}
-      </div>
+      </section>
+
+      {error ? <section className="message-card error-card">{error}</section> : null}
 
       {loading ? (
-        <div className="loading">Loading menu...</div>
+        <section className="message-card">Loading menu...</section>
       ) : filteredItems.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon">🍽️</div>
-          <p>No dishes found</p>
-        </div>
+        <section className="message-card">No dishes match the current search or category.</section>
       ) : (
-        <div className="menu-grid">
-          {filteredItems.map(item => {
-            const cartItem = cart.find(c => c.id === item.id);
+        <section className="menu-grid">
+          {filteredItems.map((item) => {
+            const cartItem = cart.find((entry) => entry.id === item.id);
+
             return (
-              <div key={item.id} className="menu-card">
-                <div className="card-image">
+              <article key={item.id} className="dish-card">
+                <div className="dish-media">
                   {item.imageUrl ? (
                     <img src={item.imageUrl} alt={item.name} />
                   ) : (
-                    "🍕"
+                    <div className="media-fallback">{getCategoryName(item).slice(0, 3).toUpperCase()}</div>
                   )}
                 </div>
-                <div className="card-content">
-                  <h3 className="card-name">{item.name}</h3>
-                  <p className="card-desc">{item.description || "Delicious dish"}</p>
-                  <div className="card-footer">
-                    <span className="card-price">₹{item.price}</span>
+
+                <div className="dish-body">
+                  <div className="dish-topline">
+                    <span className="dish-tag">{getCategoryName(item)}</span>
+                    <span className="dish-price">{fmtCurrency(item.price)}</span>
+                  </div>
+
+                  <h3>{item.name}</h3>
+                  <p>{item.description || "Freshly prepared and served for table ordering."}</p>
+
+                  <div className="dish-actions">
                     {cartItem ? (
                       <div className="qty-box">
-                        <button className="qty-btn" onClick={() => removeFromCart(item.id)}>−</button>
-                        <span className="qty-num">{cartItem.quantity}</span>
-                        <button className="qty-btn" onClick={() => addToCart(item)}>+</button>
+                        <button onClick={() => removeFromCart(item.id)}>-</button>
+                        <span>{cartItem.quantity}</span>
+                        <button onClick={() => addToCart(item)}>+</button>
                       </div>
                     ) : (
-                      <button className="add-btn" onClick={() => addToCart(item)}>
-                        + Add
+                      <button className="primary-btn" onClick={() => addToCart(item)}>
+                        Add to order
                       </button>
                     )}
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
-        </div>
+        </section>
       )}
 
-      {cart.length > 0 && (
-        <div className="cart-bar">
-          <div className="cart-content">
-            <div className="cart-info">
-              <div className="cart-count">{cart.reduce((s, i) => s + i.quantity, 0)}</div>
-              <div className="cart-total">
-                Total:<span>₹{getCartTotal()}</span>
-              </div>
-            </div>
-            <button className="view-cart-btn" onClick={() => navigate("/cart", { state: { cart, tableId } })}>
-              View Cart →
-            </button>
+      {cart.length > 0 ? (
+        <div className="cart-dock">
+          <div>
+            <strong>{cartCount} items in order</strong>
+            <p>{fmtCurrency(cartTotal)} current total</p>
           </div>
+
+          <button className="checkout-btn" onClick={() => navigate("/cart", { state: { cart, tableId } })}>
+            Review cart
+          </button>
         </div>
-      )}
+      ) : null}
+
+      <GuestMobileNav currentTableId={tableId} />
     </div>
   );
 };
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+  .guest-shell {
+    --ink: #201818;
+    --muted: #557180;
+    --line: rgba(15, 34, 48, 0.1);
+    --paper: rgba(248, 253, 255, 0.88);
+    --accent: #0891b2;
+    --accent-deep: #155e75;
+    min-height: 100vh;
+    padding: 24px 24px 96px;
+    background:
+      radial-gradient(circle at top left, rgba(34, 211, 238, 0.2), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.16), transparent 28%),
+      linear-gradient(180deg, #effbff 0%, #dff4fb 100%);
+    color: #0f2230;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .guest-hero,
+  .control-bar,
+  .message-card,
+  .dish-card,
+  .cart-dock {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    box-shadow: 0 24px 80px rgba(18, 64, 90, 0.1);
+    backdrop-filter: blur(12px);
+  }
+
+  .guest-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+    gap: 18px;
+    padding: 28px;
+    border-radius: 30px;
+  }
+
+  .hero-kicker,
+  .panel-label,
+  .search-field span {
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .hero-copy h1 {
+    margin: 12px 0;
+    max-width: 760px;
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2.2rem, 5vw, 4.2rem);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+  }
+
+  .hero-text {
+    max-width: 640px;
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+  }
+
+  .table-pill,
+  .hero-note,
+  .dish-tag,
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .table-pill {
+    background: #0f2230;
+    color: #fff;
+  }
+
+  .hero-note,
+  .dish-tag {
+    background: rgba(178, 74, 45, 0.1);
+    color: var(--accent-deep);
+  }
+
+  .hero-panel {
+    padding: 20px;
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at top right, rgba(34, 211, 238, 0.22), transparent 36%),
+      linear-gradient(180deg, rgba(250, 254, 255, 0.96), rgba(230, 247, 252, 0.92));
+    border: 1px solid rgba(15, 34, 48, 0.08);
+  }
+
+  .feature-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .feature-card {
+    display: grid;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(15, 34, 48, 0.08);
+  }
+
+  .feature-card span,
+  .feature-card.muted {
+    color: var(--muted);
+  }
+
+  .control-bar {
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 24px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .search-field {
+    display: grid;
+    gap: 10px;
+  }
+
+  .search-field input {
+    width: 100%;
+    border: 1px solid rgba(15, 34, 48, 0.1);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.76);
+    padding: 16px 18px;
+    font: inherit;
+    color: #0f2230;
+  }
+
+  .quick-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: rgba(15, 34, 48, 0.05);
+    border: 1px solid rgba(15, 34, 48, 0.06);
+  }
+
+  .stat-pill strong {
+    font-size: 0.95rem;
+  }
+
+  .stat-pill span {
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-transform: lowercase;
+  }
+
+  .chip-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 18px 4px 4px;
+  }
+
+  .chip {
+    border: 1px solid rgba(15, 34, 48, 0.08);
+    background: rgba(255, 250, 244, 0.74);
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .chip.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .message-card {
+    margin-top: 16px;
+    padding: 22px;
+    border-radius: 24px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .error-card {
+    color: #b4434b;
+    background: rgba(255, 243, 242, 0.92);
+    border-color: rgba(180, 67, 75, 0.18);
+  }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px;
+    margin-top: 18px;
+  }
+
+  .dish-card {
+    overflow: hidden;
+    border-radius: 26px;
+  }
+
+  .dish-media {
+    height: 200px;
+    background: linear-gradient(135deg, #d9f6fd, #eefcff);
+  }
+
+  .dish-media img,
+  .media-fallback {
+    width: 100%;
+    height: 100%;
+  }
+
+  .dish-media img {
+    object-fit: cover;
+    display: block;
+  }
+
+  .media-fallback {
+    display: grid;
+    place-items: center;
+    color: rgba(15, 34, 48, 0.72);
+    font-family: 'Fraunces', serif;
+    font-size: 2.4rem;
+    letter-spacing: 0.08em;
+  }
+
+  .dish-body {
+    display: grid;
+    gap: 14px;
+    padding: 20px;
+  }
+
+  .dish-topline,
+  .dish-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .dish-price {
+    font-weight: 800;
+    color: var(--accent-deep);
+  }
+
+  .dish-body h3 {
+    margin: 0;
+    font-family: 'Fraunces', serif;
+    font-size: 1.35rem;
+    line-height: 1.05;
+  }
+
+  .dish-body p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .primary-btn,
+  .qty-box button,
+  .checkout-btn {
+    border: none;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .primary-btn,
+  .checkout-btn {
+    border-radius: 16px;
+    padding: 12px 16px;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  }
+
+  .qty-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border-radius: 16px;
+    background: rgba(15, 34, 48, 0.08);
+  }
+
+  .qty-box button {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: #0f2230;
+    color: #fff;
+    font-weight: 800;
+  }
+
+  .qty-box span {
+    min-width: 20px;
+    text-align: center;
+    font-weight: 800;
+  }
+
+  .cart-dock {
+    position: fixed;
+    left: 24px;
+    right: 24px;
+    bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 20px;
+    border-radius: 24px;
+    z-index: 20;
+  }
+
+  .cart-dock strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .cart-dock p {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  @media (max-width: 900px) {
+    .guest-hero {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .guest-shell {
+      padding: 12px 12px 96px;
+    }
+
+    .guest-hero {
+      padding: 18px;
+      border-radius: 24px;
+      gap: 14px;
+    }
+
+    .hero-copy h1 {
+      font-size: 2rem;
+      line-height: 1.02;
+    }
+
+    .hero-text {
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+
+    .hero-panel {
+      padding: 16px;
+      border-radius: 20px;
+    }
+
+    .control-bar,
+    .message-card {
+      padding: 14px;
+      border-radius: 20px;
+    }
+
+    .search-field input {
+      padding: 14px 16px;
+      border-radius: 16px;
+      font-size: 16px;
+    }
+
+    .chip-row {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      margin: 0 -12px;
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(223, 244, 251, 0.96), rgba(223, 244, 251, 0.78));
+      backdrop-filter: blur(10px);
+    }
+
+    .chip {
+      min-height: 42px;
+      padding: 10px 14px;
+    }
+
+    .menu-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .dish-card {
+      border-radius: 22px;
+    }
+
+    .dish-media {
+      height: 160px;
+    }
+
+    .dish-body {
+      padding: 16px;
+      gap: 12px;
+    }
+
+    .dish-topline {
+      align-items: flex-start;
+    }
+
+    .dish-body h3 {
+      font-size: 1.2rem;
+    }
+
+    .dish-actions {
+      justify-content: stretch;
+    }
+
+    .primary-btn,
+    .checkout-btn {
+      width: 100%;
+      min-height: 48px;
+    }
+
+    .cart-dock {
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      padding: 14px;
+      border-radius: 20px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .checkout-btn {
+      width: 100%;
+    }
+  }
+`;
 
 export default Menu;

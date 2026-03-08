@@ -1,22 +1,18 @@
-import { useState, useContext } from "react";
+import { useContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../../api/axios";
 import { AuthContext } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [form, setForm] = useState({
-    username: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     if (!form.username || !form.password) {
-      setError("Please enter both username and password");
+      setError("Enter both username and password.");
       return;
     }
 
@@ -25,17 +21,9 @@ const Login = () => {
 
     try {
       const res = await API.post("/auth/login", form);
-      const token = res.data.token;
-
-      // Determine role based on username
-      const role = form.username.toLowerCase() === "admin"
-        ? "ROLE_ADMIN"
-        : "ROLE_KITCHEN";
-
+      const { token, role } = res.data;
       login(token, role);
-
-      if (role === "ROLE_ADMIN") navigate("/admin");
-      else navigate("/kitchen");
+      navigate(role === "ROLE_ADMIN" ? "/admin" : "/kitchen");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Please try again.");
     } finally {
@@ -43,296 +31,263 @@ const Login = () => {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleLogin();
-    }
-  };
-
   return (
-    <div className="login-container">
-      <style>{`
-        .login-container {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
+    <div className="auth-shell">
+      <style>{CSS}</style>
 
-        .login-card {
-          background: linear-gradient(145deg, #1e2a4a 0%, #0f1729 100%);
-          border-radius: 30px;
-          padding: 50px 40px;
-          width: 100%;
-          max-width: 420px;
-          box-shadow: 0 25px 70px rgba(0,0,0,0.4);
-          border: 1px solid rgba(255,255,255,0.05);
-          position: relative;
-          overflow: hidden;
-        }
+      <section className="auth-info">
+        <p className="auth-eyebrow">Restaurant operations suite</p>
+        <h1>Run service, kitchen, and menu control from one secure workspace.</h1>
+        <p className="auth-copy">
+          Sign in to access live order management, admin configuration, dining floor setup, and kitchen execution tools.
+        </p>
 
-        .login-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          background: linear-gradient(90deg, #e94560, #ff6b6b, #4ade80);
-        }
+        <div className="auth-metrics">
+          <article>
+            <span>Live Queue</span>
+            <strong>Kitchen + Admin</strong>
+          </article>
+          <article>
+            <span>Access Model</span>
+            <strong>Role-protected routes</strong>
+          </article>
+          <article>
+            <span>Flow</span>
+            <strong>Order to service handoff</strong>
+          </article>
+        </div>
+      </section>
 
-        .login-header {
-          text-align: center;
-          margin-bottom: 40px;
-        }
-
-        .login-logo {
-          width: 80px;
-          height: 80px;
-          background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-          border-radius: 25px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2.5rem;
-          margin: 0 auto 20px;
-          box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
-        }
-
-        .login-title {
-          color: white;
-          font-size: 1.8rem;
-          margin: 0 0 10px;
-          font-weight: 700;
-        }
-
-        .login-subtitle {
-          color: rgba(255,255,255,0.6);
-          margin: 0;
-          font-size: 1rem;
-        }
-
-        .form-group {
-          margin-bottom: 25px;
-        }
-
-        .form-label {
-          display: block;
-          color: rgba(255,255,255,0.7);
-          margin-bottom: 10px;
-          font-weight: 500;
-          font-size: 0.95rem;
-        }
-
-        .form-input {
-          width: 100%;
-          padding: 16px 20px;
-          background: rgba(255,255,255,0.05);
-          border: 2px solid rgba(255,255,255,0.1);
-          border-radius: 15px;
-          color: white;
-          font-size: 1rem;
-          transition: all 0.3s ease;
-          box-sizing: border-box;
-        }
-
-        .form-input::placeholder {
-          color: rgba(255,255,255,0.4);
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: #e94560;
-          background: rgba(233, 69, 96, 0.1);
-          box-shadow: 0 0 20px rgba(233, 69, 96, 0.2);
-        }
-
-        .login-btn {
-          width: 100%;
-          padding: 18px;
-          background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-          border: none;
-          border-radius: 15px;
-          color: white;
-          font-size: 1.1rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          margin-top: 10px;
-          box-shadow: 0 10px 30px rgba(233, 69, 96, 0.3);
-        }
-
-        .login-btn:hover:not(:disabled) {
-          transform: translateY(-3px);
-          box-shadow: 0 15px 40px rgba(233, 69, 96, 0.5);
-        }
-
-        .login-btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .error-message {
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          color: #ef4444;
-          padding: 12px 15px;
-          border-radius: 10px;
-          margin-bottom: 20px;
-          text-align: center;
-          font-size: 0.9rem;
-        }
-
-        .login-divider {
-          display: flex;
-          align-items: center;
-          margin: 30px 0;
-          color: rgba(255,255,255,0.4);
-          font-size: 0.9rem;
-        }
-
-        .login-divider::before,
-        .login-divider::after {
-          content: '';
-          flex: 1;
-          height: 1px;
-          background: rgba(255,255,255,0.1);
-        }
-
-        .login-divider span {
-          padding: 0 15px;
-        }
-
-        .role-buttons {
-          display: flex;
-          gap: 10px;
-        }
-
-        .role-btn {
-          flex: 1;
-          padding: 12px;
-          background: rgba(255,255,255,0.05);
-          border: 2px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          color: rgba(255,255,255,0.6);
-          cursor: pointer;
-          transition: all 0.3s ease;
-          font-size: 0.9rem;
-        }
-
-        .role-btn:hover {
-          background: rgba(233, 69, 96, 0.1);
-          border-color: rgba(233, 69, 96, 0.3);
-        }
-
-        .role-btn.selected {
-          background: rgba(233, 69, 96, 0.2);
-          border-color: #e94560;
-          color: white;
-        }
-
-        .demo-info {
-          text-align: center;
-          margin-top: 25px;
-          color: rgba(255,255,255,0.4);
-          font-size: 0.8rem;
-        }
-
-        .demo-info span {
-          color: #4ade80;
-        }
-
-        .loading-spinner {
-          display: inline-block;
-          width: 20px;
-          height: 20px;
-          border: 3px solid rgba(255,255,255,0.3);
-          border-radius: 50%;
-          border-top-color: white;
-          animation: spin 1s ease-in-out infinite;
-          margin-right: 10px;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-
-      <div className="login-card">
-        <div className="login-header">
-          <div className="login-logo">🍽️</div>
-          <h1 className="login-title">QR Menu</h1>
-          <p className="login-subtitle">Sign in to manage your restaurant</p>
+      <section className="auth-card">
+        <div className="auth-card-head">
+          <div className="auth-mark">QRM</div>
+          <div>
+            <h2>Sign in</h2>
+            <p>Use your assigned account to continue.</p>
+          </div>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-box">{error}</div>}
 
-        <div className="form-group">
-          <label className="form-label">Username</label>
+        <div className="field">
+          <span>Username</span>
           <input
-            type="text"
-            className="form-input"
-            placeholder="Enter username"
             value={form.username}
             onChange={(e) => setForm({ ...form, username: e.target.value })}
-            onKeyPress={handleKeyPress}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            placeholder="Enter username"
           />
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Password</label>
+        <div className="field">
+          <span>Password</span>
           <input
             type="password"
-            className="form-input"
-            placeholder="Enter password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            onKeyPress={handleKeyPress}
+            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            placeholder="Enter password"
           />
         </div>
 
-        <button
-          className="login-btn"
-          onClick={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <span className="loading-spinner"></span>
-              Signing in...
-            </>
-          ) : (
-            "Sign In"
-          )}
+        <button className="submit-btn" onClick={handleLogin} disabled={loading}>
+          {loading ? "Signing in..." : "Continue"}
         </button>
-
-        <div className="login-divider">
-          <span>Demo Accounts</span>
-        </div>
-
-        <div className="role-buttons">
-          <button
-            className={`role-btn ${form.username.toLowerCase() === 'admin' ? 'selected' : ''}`}
-            onClick={() => setForm({ ...form, username: 'admin', password: 'admin123' })}
-          >
-            👑 Admin
-          </button>
-          <button
-            className={`role-btn ${form.username.toLowerCase() === 'kitchen' ? 'selected' : ''}`}
-            onClick={() => setForm({ ...form, username: 'kitchen', password: 'kitchen123' })}
-          >
-            👨‍🍳 Kitchen
-          </button>
-        </div>
-
-        <div className="demo-info">
-          <p>Click the buttons above to use demo credentials</p>
-        </div>
-      </div>
+      </section>
     </div>
   );
 };
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  .auth-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(380px, 460px);
+    background:
+      radial-gradient(circle at top left, rgba(244, 183, 64, 0.22), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(83, 128, 255, 0.12), transparent 24%),
+      linear-gradient(180deg, #f7f3ea 0%, #efe7da 100%);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #17212b;
+  }
+
+  .auth-info,
+  .auth-card {
+    padding: 48px;
+  }
+
+  .auth-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .auth-eyebrow {
+    margin: 0 0 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.74rem;
+    color: #b66b2c;
+    font-weight: 700;
+  }
+
+  .auth-info h1 {
+    margin: 0;
+    font-size: clamp(2.4rem, 5vw, 4.6rem);
+    line-height: 0.95;
+    letter-spacing: -0.06em;
+    max-width: 760px;
+  }
+
+  .auth-copy {
+    margin: 20px 0 0;
+    max-width: 620px;
+    color: #6d7785;
+    line-height: 1.8;
+    font-size: 1rem;
+  }
+
+  .auth-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+    max-width: 780px;
+  }
+
+  .auth-metrics article,
+  .auth-card {
+    background: rgba(255, 252, 246, 0.84);
+    border: 1px solid rgba(23, 33, 43, 0.08);
+    box-shadow: 0 24px 80px rgba(77, 56, 20, 0.09);
+    backdrop-filter: blur(12px);
+  }
+
+  .auth-metrics article {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .auth-metrics span,
+  .auth-card-head p,
+  .field span {
+    color: #6d7785;
+  }
+
+  .auth-metrics strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 1rem;
+  }
+
+  .auth-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 18px;
+    border-left: 1px solid rgba(23, 33, 43, 0.08);
+  }
+
+  .auth-card-head {
+    display: grid;
+    grid-template-columns: 62px 1fr;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .auth-card-head h2 {
+    margin: 0 0 6px;
+    font-size: 1.7rem;
+  }
+
+  .auth-card-head p {
+    margin: 0;
+  }
+
+  .auth-mark {
+    width: 62px;
+    height: 62px;
+    border-radius: 20px;
+    background: #17212b;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 0.94rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+
+  .field {
+    display: grid;
+    gap: 8px;
+    font-size: 0.86rem;
+    font-weight: 700;
+  }
+
+  .field input {
+    width: 100%;
+    border: 1px solid rgba(23, 33, 43, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.74);
+    padding: 15px 16px;
+    font: inherit;
+  }
+
+  .submit-btn {
+    border: none;
+    border-radius: 16px;
+    font: inherit;
+  }
+
+  .submit-btn {
+    padding: 15px 18px;
+    background: #17212b;
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .error-box {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(239, 107, 115, 0.12);
+    color: #b4434b;
+    border: 1px solid rgba(180, 67, 75, 0.18);
+  }
+
+  @media (max-width: 980px) {
+    .auth-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .auth-info {
+      padding-bottom: 16px;
+    }
+
+    .auth-card {
+      margin: 0 16px 16px;
+      border-left: none;
+      border-radius: 28px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .auth-info,
+    .auth-card {
+      padding: 22px;
+    }
+
+    .auth-metrics {
+      grid-template-columns: 1fr;
+    }
+  }
+`;
 
 export default Login;

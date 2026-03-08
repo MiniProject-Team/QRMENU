@@ -6,6 +6,7 @@ public class KitchenOrderDTO {
 
     private Long orderId;
     private String status;
+    private String createdAt;
     private Long tableId;
     private String tableNumber;
     private List<String> items;
@@ -18,6 +19,10 @@ public class KitchenOrderDTO {
 
     public String getStatus() {
         return status;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
     }
 
     public Long getTableId() {
@@ -40,6 +45,10 @@ public class KitchenOrderDTO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setTableId(Long tableId) {

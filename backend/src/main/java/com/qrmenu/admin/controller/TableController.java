@@ -30,6 +30,11 @@ public class TableController {
         return service.getAll();
     }
 
+    @PutMapping("/toggle/{id}")
+    public TableEntity toggle(@PathVariable Long id) {
+        return service.toggle(id);
+    }
+
     @DeleteMapping("/delete/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);

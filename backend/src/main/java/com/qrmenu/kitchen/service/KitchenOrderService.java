@@ -10,7 +10,6 @@ import com.qrmenu.shared.enums.OrderStatus;
 import com.qrmenu.shared.model.MenuItem;
 import com.qrmenu.shared.model.Order;
 import com.qrmenu.shared.model.OrderItem;
-import com.qrmenu.shared.model.TableEntity;
 import com.qrmenu.shared.repository.MenuRepository;
 import com.qrmenu.shared.repository.OrderRepository;
 import com.qrmenu.shared.repository.TableRepository;
@@ -55,6 +54,10 @@ public class KitchenOrderService {
         return updateStatus(id, OrderStatus.SERVED);
     }
 
+    public Order cancelOrder(Long id) {
+        return updateStatus(id, OrderStatus.CANCELLED);
+    }
+
     private Order updateStatus(Long id, OrderStatus status) {
         Order order = orderRepo.findById(id).orElseThrow();
         order.setStatus(status);
@@ -65,6 +68,7 @@ public class KitchenOrderService {
         KitchenOrderDTO dto = new KitchenOrderDTO();
         dto.setOrderId(order.getId());
         dto.setStatus(order.getStatus().name());
+        dto.setCreatedAt(order.getCreatedAt() == null ? null : order.getCreatedAt().toString());
         dto.setTableId(order.getTableId());
 
         String tableNumber;

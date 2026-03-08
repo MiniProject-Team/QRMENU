@@ -46,4 +46,10 @@ public class MenuManagementService {
     public void delete(Long id) {
         menuRepo.deleteById(id);
     }
+
+    public MenuItem toggleAvailability(Long id) {
+        MenuItem item = menuRepo.findById(id).orElseThrow();
+        item.setAvailable(!item.isAvailable());
+        return menuRepo.save(item);
+    }
 }

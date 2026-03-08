@@ -10,7 +10,7 @@ description = 'QR Menu Backend Project'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(24)
+		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
 
@@ -25,6 +25,8 @@ repositories {
 }
 
 dependencies {
+	implementation 'com.google.zxing:core:3.5.3'
+implementation 'com.google.zxing:javase:3.5.3'
 
 	// 🌐 Web / REST API
 	implementation 'org.springframework.boot:spring-boot-starter-web'

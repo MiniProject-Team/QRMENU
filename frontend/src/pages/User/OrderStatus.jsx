@@ -1,12 +1,47 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import API from "../../api/axios";
+import GuestMobileNav from "../../components/GuestMobileNav";
+import { saveCurrentOrder } from "../../utils/guestFlow";
+
+const progressMap = {
+  PLACED: 0,
+  PENDING: 0,
+  ACCEPTED: 1,
+  COOKING: 2,
+  PREPARING: 2,
+  READY: 3,
+  SERVED: 4,
+  COMPLETED: 4,
+};
+
+const statusMeta = {
+  PLACED: { label: "Order placed", tone: "amber", message: "The kitchen has your ticket and will confirm it shortly." },
+  PENDING: { label: "Order placed", tone: "amber", message: "The kitchen has your ticket and will confirm it shortly." },
+  ACCEPTED: { label: "Confirmed", tone: "blue", message: "Your order was accepted and moved into the prep queue." },
+  COOKING: { label: "Preparing", tone: "orange", message: "The kitchen is actively preparing your dishes now." },
+  PREPARING: { label: "Preparing", tone: "orange", message: "The kitchen is actively preparing your dishes now." },
+  READY: { label: "Ready", tone: "green", message: "Your order is ready for service." },
+  SERVED: { label: "Completed", tone: "slate", message: "The order has been completed. Enjoy your meal." },
+  COMPLETED: { label: "Completed", tone: "slate", message: "The order has been completed. Enjoy your meal." },
+};
+
+const steps = [
+  { key: "PLACED", label: "Placed" },
+  { key: "ACCEPTED", label: "Confirmed" },
+  { key: "COOKING", label: "Preparing" },
+  { key: "READY", label: "Ready" },
+  { key: "SERVED", label: "Done" },
+];
+
+const paymentAllowedStatuses = ["READY", "SERVED", "COMPLETED"];
 
 const OrderStatus = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchOrder();
@@ -16,277 +51,380 @@ const OrderStatus = () => {
 
   const fetchOrder = async () => {
     try {
-      const res = await API.get(`/user/orders/track/${orderId}`);
+      setError("");
+      const res = await API.get(`/user/orders/${orderId}`);
       setOrder(res.data);
+      saveCurrentOrder({
+        orderId: res.data?.id ?? res.data?.orderId ?? orderId,
+        tableId: res.data?.tableId ?? null,
+      });
     } catch (err) {
       console.error("Error fetching order:", err);
+      setOrder(null);
+      setError("Unable to load this order right now.");
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusProgress = (status) => {
-    const steps = { "PENDING": 0, "ACCEPTED": 1, "COOKING": 2, "READY": 3, "SERVED": 4 };
-    return steps[status] || 0;
-  };
-
-  const getStatusInfo = (status) => {
-    switch (status) {
-      case "PENDING": 
-        return { label: "Order Placed", color: "#f59e0b", icon: "⏳", message: "Waiting for kitchen confirmation" };
-      case "ACCEPTED": 
-        return { label: "Confirmed", color: "#8b5cf6", icon: "✓", message: "Your order has been confirmed" };
-      case "COOKING": 
-        return { label: "Preparing", color: "#f97316", icon: "👨‍🍳", message: "Your food is being prepared" };
-      case "READY": 
-        return { label: "Ready", color: "#10b981", icon: "🍽️", message: "Your food is ready to serve!" };
-      case "SERVED": 
-        return { label: "Completed", color: "#6b7280", icon: "✓", message: "Enjoy your meal!" };
-      default: 
-        return { label: status, color: "#6b7280", icon: "❓", message: "Processing" };
-    }
-  };
-
   if (loading) {
     return (
-      <div className="status-loading">
-        <style>{`
-          .status-loading {
-            min-height: 100vh;
-            background: #0a0a0f;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Inter', sans-serif;
-          }
-          .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #222;
-            border-top-color: #6366f1;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
-          .loading-text { color: #666; margin-top: 16px; }
-        `}</style>
-        <div className="spinner"></div>
-        <p className="loading-text">Loading order...</p>
+      <div className="guest-shell status-center">
+        <style>{CSS}</style>
+        <section className="status-card single">
+          <p className="section-kicker">Order tracking</p>
+          <h1>Loading order...</h1>
+        </section>
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="error-page">
-        <style>{`
-          .error-page {
-            min-height: 100vh;
-            background: #0a0a0f;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Inter', sans-serif;
-          }
-          .error-icon { font-size: 4rem; margin-bottom: 16px; }
-          .error-title { color: #fff; font-size: 1.5rem; margin-bottom: 24px; }
-          .back-btn {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white;
-            border: none;
-            padding: 14px 32px;
-            border-radius: 14px;
-            font-weight: 600;
-            cursor: pointer;
-          }
-        `}</style>
-        <div className="error-icon">😕</div>
-        <h2 className="error-title">Order not found</h2>
-        <button className="back-btn" onClick={() => navigate("/menu/1")}>
-          Back to Menu
-        </button>
+      <div className="guest-shell status-center">
+        <style>{CSS}</style>
+        <section className="status-card single">
+          <p className="section-kicker">Order unavailable</p>
+          <h1>Order not found.</h1>
+          <p>{error || "The requested order could not be loaded."}</p>
+          <button className="primary-btn" onClick={() => navigate("/menu/1")}>
+            Back to menu
+          </button>
+        </section>
       </div>
     );
   }
 
-  const currentStep = getStatusProgress(order.status);
-  const statusInfo = getStatusInfo(order.status);
-
-  const steps = [
-    { key: "PENDING", label: "Placed" },
-    { key: "ACCEPTED", label: "Confirmed" },
-    { key: "COOKING", label: "Preparing" },
-    { key: "READY", label: "Ready" },
-    { key: "SERVED", label: "Done" }
-  ];
+  const currentStatus = order?.status ?? order?.orderStatus ?? order?.OrderStatus ?? "PLACED";
+  const currentStep = progressMap[currentStatus] ?? 0;
+  const meta = statusMeta[currentStatus] ?? statusMeta.PLACED;
+  const canProceedToPayment = paymentAllowedStatuses.includes(currentStatus);
 
   return (
-    <div className="status-page">
-      <style>{`
-        .status-page {
-          min-height: 100vh;
-          background: #0a0a0f;
-          padding: 30px 20px;
-          font-family: 'Inter', -apple-system, sans-serif;
-        }
-        .status-card {
-          max-width: 500px;
-          margin: 0 auto;
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 24px;
-          padding: 32px;
-          border: 1px solid #222;
-        }
-        .order-header {
-          text-align: center;
-          margin-bottom: 32px;
-        }
-        .order-label { color: #666; font-size: 0.9rem; margin: 0 0 4px; }
-        .order-number { color: #fff; font-size: 2rem; font-weight: 700; margin: 0; }
-        
-        .status-display {
-          text-align: center;
-          margin-bottom: 32px;
-        }
-        .status-icon-wrap {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2rem;
-          margin: 0 auto 16px;
-        }
-        .status-label { color: #fff; font-size: 1.5rem; font-weight: 700; margin: 0 0 8px; }
-        .status-message { color: #666; margin: 0; }
-        
-        .progress-steps {
-          display: flex;
-          justify-content: space-between;
-          margin: 32px 0;
-          position: relative;
-        }
-        .progress-steps::before {
-          content: '';
-          position: absolute;
-          top: 20px;
-          left: 12px;
-          right: 12px;
-          height: 3px;
-          background: #222;
-        }
-        .step { display: flex; flex-direction: column; align-items: center; z-index: 1; }
-        .step-circle {
-          width: 44px;
-          height: 44px;
-          border-radius: 50%;
-          background: #15151f;
-          border: 3px solid #333;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 8px;
-          font-size: 1rem;
-          transition: 0.3s;
-        }
-        .step-circle.active { border-color: #6366f1; background: #6366f1; box-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
-        .step-circle.completed { border-color: #10b981; background: #10b981; }
-        .step-label { font-size: 0.7rem; color: #555; text-transform: uppercase; }
-        .step-label.active { color: #6366f1; }
-        
-        .items-box { margin-top: 32px; }
-        .items-title { color: #fff; font-size: 1.1rem; margin: 0 0 16px; font-weight: 600; }
-        .item-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 14px;
-          background: #1a1a24;
-          border-radius: 12px;
-          margin-bottom: 10px;
-        }
-        .item-name { color: #ccc; }
-        .item-qty { color: #666; background: #222; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; }
-        
-        .table-box {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px;
-          background: rgba(99, 102, 241, 0.1);
-          border-radius: 14px;
-          margin-top: 24px;
-        }
-        .table-label { color: #888; }
-        .table-num { color: #818cf8; font-size: 1.5rem; font-weight: 700; }
-        
-        .order-btn {
-          width: 100%;
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
-          border: none;
-          padding: 16px;
-          border-radius: 14px;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          margin-top: 24px;
-          transition: 0.2s;
-        }
-        .order-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3); }
-      `}</style>
+    <div className="guest-shell">
+      <style>{CSS}</style>
 
-      <div className="status-card">
-        <div className="order-header">
-          <p className="order-label">Order ID</p>
-          <h1 className="order-number">#{order.id}</h1>
+      <header className="status-head">
+        <div>
+          <p className="section-kicker">Live order tracking</p>
+          <h1>Order #{order.id ?? order.orderId}</h1>
+          <p className="page-copy">{meta.message}</p>
         </div>
 
-        <div className="status-display">
-          <div 
-            className="status-icon-wrap"
-            style={{ backgroundColor: `${statusInfo.color}20`, color: statusInfo.color }}
-          >
-            {statusInfo.icon}
-          </div>
-          <h2 className="status-label" style={{ color: statusInfo.color }}>{statusInfo.label}</h2>
-          <p className="status-message">{statusInfo.message}</p>
-        </div>
+        <div className={`status-badge tone-${meta.tone}`}>{meta.label}</div>
+      </header>
 
-        <div className="progress-steps">
-          {steps.map((step, index) => (
-            <div key={step.key} className="step">
-              <div className={`step-circle ${index < currentStep ? 'completed' : ''} ${index === currentStep ? 'active' : ''}`}>
-                {index < currentStep ? '✓' : ''}
+      <section className="status-layout">
+        <article className="status-card">
+          <div className="progress-rail">
+            {steps.map((step, index) => (
+              <div key={step.key} className="step-block">
+                <div className={`step-dot ${index < currentStep ? "done" : ""} ${index === currentStep ? "live" : ""}`} />
+                <strong>{step.label}</strong>
               </div>
-              <span className={`step-label ${index <= currentStep ? 'active' : ''}`}>{step.label}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className="items-box">
-          <h3 className="items-title">Order Items</h3>
-          {order.items?.map((item, idx) => (
-            <div key={idx} className="item-row">
-              <span className="item-name">{item.menuItem?.name || "Item"}</span>
-              <span className="item-qty">x{item.quantity}</span>
-            </div>
-          ))}
-        </div>
+          <div className="items-list">
+            <h2>Order items</h2>
+            {(order.items ?? []).length === 0 ? (
+              <p className="muted-copy">No item details available for this order.</p>
+            ) : (
+              order.items.map((item, index) => (
+                <div key={index} className="item-row">
+                  <span>{item.menuItem?.name || item.itemName || `Item ${item.menuItemId ?? ""}`}</span>
+                  <strong>x{item.quantity}</strong>
+                </div>
+              ))
+            )}
+          </div>
+        </article>
 
-        <div className="table-box">
-          <span className="table-label">Table</span>
-          <span className="table-num">{order.tableId}</span>
-        </div>
+        <aside className="summary-card">
+          <p className="section-kicker">Dining table</p>
+          <h2>{order.tableId ?? "-"}</h2>
+          <p className="muted-copy">
+            {canProceedToPayment
+              ? "Order is ready for settlement. You can proceed with payment now."
+              : "Payment will unlock once the order is ready or completed."}
+          </p>
+          <button
+            className="secondary-btn large"
+            onClick={() => navigate("/payment", { state: { orderId: order.id ?? order.orderId } })}
+            disabled={!canProceedToPayment}
+          >
+            {canProceedToPayment ? "Proceed to payment" : "Payment locked"}
+          </button>
+          <button className="primary-btn large" onClick={() => navigate(`/menu/${order.tableId || 1}`)}>
+            Order more
+          </button>
+        </aside>
+      </section>
 
-        <button className="order-btn" onClick={() => navigate(`/menu/${order.tableId}`)}>
-          Order More
-        </button>
-      </div>
+      <GuestMobileNav currentTableId={order.tableId} />
     </div>
   );
 };
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+  .guest-shell {
+    min-height: 100vh;
+    padding: 24px;
+    background:
+      radial-gradient(circle at top left, rgba(34, 211, 238, 0.2), transparent 24%),
+      radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.16), transparent 28%),
+      linear-gradient(180deg, #effbff 0%, #dff4fb 100%);
+    color: #0f2230;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .status-center {
+    display: grid;
+    place-items: center;
+  }
+
+  .status-head,
+  .status-card,
+  .summary-card {
+    background: rgba(248, 253, 255, 0.88);
+    border: 1px solid rgba(15, 34, 48, 0.08);
+    box-shadow: 0 24px 80px rgba(18, 64, 90, 0.1);
+    backdrop-filter: blur(12px);
+    border-radius: 28px;
+  }
+
+  .status-head,
+  .status-card,
+  .summary-card {
+    padding: 24px;
+  }
+
+  .status-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .section-kicker {
+    margin: 0 0 10px;
+    color: #0891b2;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  h1,
+  h2 {
+    margin: 0;
+    font-family: 'Fraunces', serif;
+    letter-spacing: -0.04em;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 4vw, 3rem);
+  }
+
+  .page-copy,
+  .muted-copy,
+  .single p {
+    color: #557180;
+    line-height: 1.7;
+  }
+
+  .page-copy {
+    margin: 10px 0 0;
+    max-width: 680px;
+  }
+
+  .status-badge {
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  .tone-amber { background: rgba(250, 204, 21, 0.18); color: #9a6700; }
+  .tone-blue { background: rgba(56, 189, 248, 0.18); color: #0369a1; }
+  .tone-orange { background: rgba(251, 146, 60, 0.18); color: #c2410c; }
+  .tone-green { background: rgba(16, 185, 129, 0.18); color: #0f766e; }
+  .tone-slate { background: rgba(148, 163, 184, 0.18); color: #475569; }
+
+  .status-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+    gap: 18px;
+    margin-top: 18px;
+  }
+
+  .progress-rail {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .step-block {
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .step-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(15, 34, 48, 0.14);
+    border: 4px solid rgba(15, 34, 48, 0.06);
+  }
+
+  .step-dot.done {
+    background: #0f766e;
+  }
+
+  .step-dot.live {
+    background: #0891b2;
+    box-shadow: 0 0 0 8px rgba(8, 145, 178, 0.14);
+  }
+
+  .items-list h2 {
+    margin-bottom: 16px;
+    font-size: 1.8rem;
+  }
+
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(15, 34, 48, 0.08);
+  }
+
+  .item-row + .item-row {
+    margin-top: 10px;
+  }
+
+  .summary-card h2 {
+    font-size: 3rem;
+    margin-bottom: 12px;
+  }
+
+  .primary-btn {
+    border: none;
+    border-radius: 16px;
+    padding: 12px 16px;
+    color: #fff;
+    background: linear-gradient(135deg, #0891b2, #155e75);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .secondary-btn {
+    border: none;
+    border-radius: 16px;
+    padding: 12px 16px;
+    color: #0f2230;
+    background: rgba(8, 145, 178, 0.12);
+    border: 1px solid rgba(8, 145, 178, 0.18);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .secondary-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .primary-btn.large {
+    width: 100%;
+    margin-top: 18px;
+    padding: 16px;
+  }
+
+  .secondary-btn.large {
+    width: 100%;
+    margin-top: 18px;
+    padding: 16px;
+  }
+
+  .single {
+    max-width: 560px;
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    .status-head,
+    .status-layout,
+    .progress-rail {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .guest-shell {
+      padding: 12px;
+    }
+
+    .status-head,
+    .status-card,
+    .summary-card {
+      padding: 16px;
+      border-radius: 22px;
+    }
+
+    .status-head {
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+    }
+
+    .page-copy,
+    .muted-copy {
+      font-size: 0.95rem;
+    }
+
+    .status-badge {
+      width: fit-content;
+    }
+
+    .progress-rail {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 18px;
+    }
+
+    .step-block {
+      min-width: 78px;
+    }
+
+    .item-row {
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-size: 0.95rem;
+    }
+
+    .summary-card h2 {
+      font-size: 2.4rem;
+    }
+
+    .primary-btn.large,
+    .secondary-btn.large {
+      min-height: 48px;
+    }
+  }
+`;
 
 export default OrderStatus;

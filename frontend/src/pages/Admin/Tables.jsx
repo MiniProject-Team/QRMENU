@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import API from "../../api/axios";
+import OpsLayout from "../../components/ops/OpsLayout";
 
 const Tables = () => {
   const [tables, setTables] = useState([]);
   const [tableNumber, setTableNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchTables();
@@ -12,18 +14,13 @@ const Tables = () => {
 
   const fetchTables = async () => {
     try {
+      setError("");
       const res = await API.get("/admin/tables/all");
       setTables(res.data || []);
     } catch (err) {
       console.error("Error fetching tables:", err);
-      // Demo data
-      setTables([
-        { id: 1, tableNumber: 1, active: true, qrCode: "TABLE-1" },
-        { id: 2, tableNumber: 2, active: true, qrCode: "TABLE-2" },
-        { id: 3, tableNumber: 3, active: true, qrCode: "TABLE-3" },
-        { id: 4, tableNumber: 4, active: false, qrCode: "TABLE-4" },
-        { id: 5, tableNumber: 5, active: true, qrCode: "TABLE-5" }
-      ]);
+      setTables([]);
+      setError("Unable to load tables from the server.");
     }
   };
 
@@ -31,18 +28,13 @@ const Tables = () => {
     if (!tableNumber.trim()) return;
     try {
       setLoading(true);
-      await API.post("/admin/tables/add", { tableNumber: parseInt(tableNumber), active: true });
+      setError("");
+      await API.post("/admin/tables/add", { tableNumber: parseInt(tableNumber, 10), active: true });
       setTableNumber("");
       fetchTables();
     } catch (err) {
-      // Demo: add locally
-      setTables([...tables, { 
-        id: Date.now(), 
-        tableNumber: parseInt(tableNumber), 
-        active: true, 
-        qrCode: `TABLE-${tableNumber}` 
-      }]);
-      setTableNumber("");
+      console.error("Error adding table:", err);
+      setError("Unable to add table right now.");
     } finally {
       setLoading(false);
     }
@@ -50,263 +42,245 @@ const Tables = () => {
 
   const toggleTable = async (id) => {
     try {
+      setError("");
       await API.put(`/admin/tables/toggle/${id}`);
       fetchTables();
     } catch (err) {
-      setTables(tables.map(t => t.id === id ? { ...t, active: !t.active } : t));
+      console.error("Error toggling table:", err);
+      setError("Unable to update table status.");
     }
   };
 
   const deleteTable = async (id) => {
     try {
+      setError("");
       await API.delete(`/admin/tables/delete/${id}`);
       fetchTables();
     } catch (err) {
-      setTables(tables.filter(t => t.id !== id));
+      console.error("Error deleting table:", err);
+      setError("Unable to delete table right now.");
     }
   };
 
+  const activeTables = tables.filter((table) => table.active).length;
+
   return (
-    <div className="tables-page">
-      <style>{`
-        .tables-page {
-          min-height: 100vh;
-          background: #0a0a0f;
-          padding: 30px;
-          font-family: 'Inter', -apple-system, sans-serif;
-        }
-        .page-header {
-          margin-bottom: 32px;
-        }
-        .page-title {
-          color: #fff;
-          font-size: 1.75rem;
-          margin: 0 0 8px;
-          font-weight: 700;
-        }
-        .page-subtitle {
-          color: #666;
-          margin: 0;
-        }
-        .add-form {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 20px;
-          padding: 24px;
-          margin-bottom: 32px;
-          border: 1px solid #222;
-        }
-        .form-title {
-          color: #fff;
-          font-size: 1.1rem;
-          margin: 0 0 16px;
-          font-weight: 600;
-        }
-        .input-group {
-          display: flex;
-          gap: 12px;
-        }
-        .form-input {
-          flex: 1;
-          max-width: 200px;
-          padding: 14px 20px;
-          border-radius: 14px;
-          border: 1px solid #222;
-          background: #1a1a24;
-          color: #fff;
-          font-size: 1rem;
-        }
-        .form-input::placeholder { color: #555; }
-        .form-input:focus {
-          outline: none;
-          border-color: #6366f1;
-        }
-        .add-btn {
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: white;
-          border: none;
-          padding: 14px 28px;
-          border-radius: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-        .add-btn:hover { transform: translateY(-2px); }
-        
-        .stats-row {
-          display: flex;
-          gap: 20px;
-          margin-bottom: 32px;
-          flex-wrap: wrap;
-        }
-        .stat-box {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 16px;
-          padding: 20px 28px;
-          border: 1px solid #222;
-        }
-        .stat-num { color: #fff; font-size: 2rem; font-weight: 700; }
-        .stat-lbl { color: #666; font-size: 0.85rem; }
-        
-        .tables-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
-        }
-        .table-card {
-          background: linear-gradient(145deg, #15151f, #0d0d14);
-          border-radius: 20px;
-          padding: 24px;
-          border: 1px solid #222;
-          position: relative;
-          overflow: hidden;
-        }
-        .table-card.inactive { opacity: 0.5; }
-        .table-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-        }
-        .table-card.active::before {
-          background: linear-gradient(90deg, #10b981, #059669);
-        }
-        .table-card.inactive::before {
-          background: #333;
-        }
-        .table-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 16px;
-        }
-        .table-num {
-          color: #fff;
-          font-size: 2rem;
-          font-weight: 700;
-        }
-        .table-label {
-          color: #666;
-          font-size: 0.85rem;
-        }
-        .qr-code {
-          background: #1a1a24;
-          padding: 8px 14px;
-          border-radius: 10px;
-          color: #888;
-          font-size: 0.8rem;
-          font-family: monospace;
-        }
-        .table-footer {
-          display: flex;
-          gap: 10px;
-          margin-top: 20px;
-        }
-        .toggle-btn {
-          flex: 1;
-          padding: 12px;
-          border: none;
-          border-radius: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-        .toggle-btn.active {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-        }
-        .toggle-btn.inactive {
-          background: rgba(16, 185, 129, 0.1);
-          color: #10b981;
-        }
-        .delete-btn {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-          border: none;
-          width: 44px;
-          border-radius: 12px;
-          cursor: pointer;
-          font-size: 1.2rem;
-        }
-        .delete-btn:hover { background: #ef4444; color: white; }
-        
-        .empty-state {
-          text-align: center;
-          padding: 60px 20px;
-          color: #555;
-        }
-      `}</style>
+    <OpsLayout
+      title="Table Management"
+      subtitle="Control table availability and keep your QR dining floor organized."
+      eyebrow="Admin / Tables"
+      role="admin"
+      badge={`${tables.length} tables`}
+      actions={
+        <button className="ops-primary-btn" onClick={addTable} disabled={loading || !tableNumber.trim()}>
+          {loading ? "Adding..." : "Add table"}
+        </button>
+      }
+    >
+      <style>{CSS}</style>
 
-      <div className="page-header">
-        <h1 className="page-title">Tables</h1>
-        <p className="page-subtitle">Manage restaurant tables and QR codes</p>
-      </div>
-
-      <div className="add-form">
-        <h3 className="form-title">Add New Table</h3>
-        <div className="input-group">
+      <section className="table-top">
+        <article className="panel-card composer">
+          <h3>Add new table</h3>
+          <p>Provision a new dining table and make it immediately available for QR orders.</p>
           <input
             type="number"
-            className="form-input"
-            placeholder="Table number..."
             value={tableNumber}
             onChange={(e) => setTableNumber(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && addTable()}
+            placeholder="Table number"
           />
-          <button className="add-btn" onClick={addTable} disabled={loading || !tableNumber.trim()}>
-            {loading ? 'Adding...' : '+ Add Table'}
-          </button>
-        </div>
-      </div>
+        </article>
 
-      <div className="stats-row">
-        <div className="stat-box">
-          <div className="stat-num">{tables.length}</div>
-          <div className="stat-lbl">Total Tables</div>
-        </div>
-        <div className="stat-box">
-          <div className="stat-num" style={{ color: '#10b981' }}>{tables.filter(t => t.active).length}</div>
-          <div className="stat-lbl">Active</div>
-        </div>
-        <div className="stat-box">
-          <div className="stat-num" style={{ color: '#ef4444' }}>{tables.filter(t => !t.active).length}</div>
-          <div className="stat-lbl">Inactive</div>
-        </div>
-      </div>
+        <article className="stats-panel">
+          <div className="stat-card">
+            <span>Total tables</span>
+            <strong>{tables.length}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Active now</span>
+            <strong>{activeTables}</strong>
+          </div>
+          <div className="stat-card">
+            <span>Inactive</span>
+            <strong>{tables.length - activeTables}</strong>
+          </div>
+        </article>
+      </section>
 
-      {tables.length === 0 ? (
-        <div className="empty-state">
-          <p>No tables yet. Add your first table above.</p>
-        </div>
-      ) : (
-        <div className="tables-grid">
-          {tables.map(table => (
-            <div key={table.id} className={`table-card ${table.active ? 'active' : 'inactive'}`}>
-              <div className="table-header">
+      <section className="table-grid">
+        {error ? <article className="panel-card error-state">{error}</article> : null}
+        {tables.length === 0 ? (
+          <article className="panel-card empty-state">No tables created yet.</article>
+        ) : (
+          tables.map((table) => (
+            <article key={table.id} className="panel-card table-card">
+              <div className="table-card-head">
                 <div>
-                  <div className="table-num">{table.tableNumber}</div>
-                  <div className="table-label">Table</div>
+                  <span className="table-chip">Table</span>
+                  <h3>{table.tableNumber}</h3>
                 </div>
-                <div className="qr-code">{table.qrCode || `TABLE-${table.tableNumber}`}</div>
+                <span className={`table-state ${table.active ? "active" : "inactive"}`}>
+                  {table.active ? "Active" : "Inactive"}
+                </span>
               </div>
-              <div className="table-footer">
-                <button 
-                  className={`toggle-btn ${table.active ? 'active' : 'inactive'}`}
-                  onClick={() => toggleTable(table.id)}
-                >
-                  {table.active ? 'Deactivate' : 'Activate'}
+
+              <p>QR label: TABLE-{table.tableNumber}</p>
+
+              <div className="action-row">
+                <button className="secondary-btn" onClick={() => toggleTable(table.id)}>
+                  {table.active ? "Deactivate" : "Activate"}
                 </button>
-                <button className="delete-btn" onClick={() => deleteTable(table.id)}>
-                  ×
+                <button className="danger-btn-inline" onClick={() => deleteTable(table.id)}>
+                  Delete
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            </article>
+          ))
+        )}
+      </section>
+    </OpsLayout>
   );
 };
+
+const CSS = `
+  .ops-primary-btn,
+  .secondary-btn,
+  .danger-btn-inline {
+    border: none;
+    border-radius: 14px;
+    padding: 12px 16px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .ops-primary-btn,
+  .secondary-btn {
+    background: #17212b;
+    color: #fff;
+  }
+
+  .danger-btn-inline {
+    background: #f4ded6;
+    color: #9b3e3e;
+  }
+
+  .table-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) 320px;
+    gap: 18px;
+  }
+
+  .panel-card,
+  .stats-panel {
+    padding: 22px;
+    border-radius: 24px;
+    background: rgba(255, 252, 246, 0.84);
+    border: 1px solid rgba(23, 33, 43, 0.08);
+    box-shadow: 0 24px 80px rgba(77, 56, 20, 0.09);
+  }
+
+  .composer h3,
+  .table-card h3 {
+    margin: 0 0 8px;
+  }
+
+  .composer p,
+  .table-card p,
+  .stat-card span,
+  .empty-state {
+    color: #6d7785;
+  }
+
+  .composer input {
+    width: 100%;
+    margin-top: 16px;
+    border: 1px solid rgba(23, 33, 43, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.74);
+    padding: 14px 15px;
+    font: inherit;
+  }
+
+  .stats-panel {
+    display: grid;
+    gap: 14px;
+  }
+
+  .stat-card {
+    padding: 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(23, 33, 43, 0.08);
+  }
+
+  .stat-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 2rem;
+    letter-spacing: -0.05em;
+  }
+
+  .table-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
+  }
+
+  .table-card {
+    display: grid;
+    gap: 16px;
+  }
+
+  .table-card-head,
+  .action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .table-chip,
+  .table-state {
+    display: inline-flex;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .table-chip {
+    background: rgba(23, 33, 43, 0.06);
+    color: #6d7785;
+  }
+
+  .table-state.active {
+    background: rgba(53, 197, 138, 0.14);
+    color: #1b8f61;
+  }
+
+  .table-state.inactive {
+    background: rgba(239, 107, 115, 0.14);
+    color: #b4434b;
+  }
+
+  .empty-state {
+    text-align: center;
+  }
+
+  .error-state {
+    color: #b4434b;
+    background: rgba(255, 244, 244, 0.92);
+    border-color: rgba(180, 67, 75, 0.18);
+  }
+
+  @media (max-width: 980px) {
+    .table-top {
+      grid-template-columns: 1fr;
+    }
+  }
+`;
 
 export default Tables;

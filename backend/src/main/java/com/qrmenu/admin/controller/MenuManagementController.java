@@ -30,6 +30,11 @@ public class MenuManagementController {
         return service.getAll();
     }
 
+    @PutMapping("/toggle/{id}")
+    public MenuItem toggle(@PathVariable Long id) {
+        return service.toggleAvailability(id);
+    }
+
     @DeleteMapping("/delete/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);

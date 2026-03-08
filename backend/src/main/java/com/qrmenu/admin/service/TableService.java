@@ -35,4 +35,10 @@ public class TableService {
     public void delete(Long id) {
         repo.deleteById(id);
     }
+
+    public TableEntity toggle(Long id) {
+        TableEntity table = repo.findById(id).orElseThrow();
+        table.setActive(!table.isActive());
+        return repo.save(table);
+    }
 }
