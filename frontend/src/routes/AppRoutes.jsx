@@ -15,7 +15,6 @@ import OrderStatus from "../pages/User/OrderStatus";
 import Payment from "../pages/User/Payment";
 import ProtectedRoute from "./ProtectedRoute";
 
-
 const AppRoutes = () => {
   return (
     <BrowserRouter>
