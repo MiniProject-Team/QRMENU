@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import API from "../../api/axios";
 import OpsLayout from "../../components/ops/OpsLayout";
+import { formatRemainingPrep, getRemainingPrepMs, inferTotalTimeMinutes } from "../../utils/orderTimer";
 
 const STATUS_FLOW = {
   PENDING: { label: "Queued", color: "#b88209", tone: "rgba(244, 183, 64, 0.14)", next: "accept", action: "Accept" },
@@ -30,6 +31,7 @@ const KitchenPanel = () => {
   const [activeTab, setActiveTab] = useState("active");
   const [updating, setUpdating] = useState(null);
   const [error, setError] = useState("");
+  const [now, setNow] = useState(Date.now());
   const prevIds = useRef(new Set());
 
   const fetchOrders = useCallback(async (silent = false) => {
@@ -57,6 +59,11 @@ const KitchenPanel = () => {
     const poll = setInterval(() => fetchOrders(true), 4000);
     return () => clearInterval(poll);
   }, [fetchOrders]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const updateStatus = async (id, endpoint) => {
     setUpdating(id);
@@ -137,6 +144,11 @@ const KitchenPanel = () => {
         ) : (
           visibleOrders.map((order) => {
             const flow = STATUS_FLOW[order.status] ?? STATUS_FLOW.PLACED;
+            const startTime = order.startTime ?? order.orderStartTime ?? order.createdAt;
+            const totalTime = order.totalTime ?? order.totalTimeMinutes ?? inferTotalTimeMinutes(order.items);
+            const remainingPrep = formatRemainingPrep(
+              getRemainingPrepMs(startTime, totalTime, now)
+            );
             return (
               <article key={order.orderId} className="panel-card ticket-card">
                 <div className="ticket-head">
@@ -150,6 +162,10 @@ const KitchenPanel = () => {
                 </div>
 
                 <p className="ticket-time">Open for {elapsed(order.createdAt)}</p>
+                <div className="timer-strip">
+                  <span>Prep target: {totalTime ?? 0} min</span>
+                  <strong>{remainingPrep}</strong>
+                </div>
 
                 <div className="item-list">
                   {(order.items ?? []).map((item, index) => (
@@ -287,6 +303,29 @@ const CSS = `
   .item-list {
     display: grid;
     gap: 8px;
+  }
+
+  .timer-strip {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(23, 33, 43, 0.05);
+    border: 1px solid rgba(23, 33, 43, 0.08);
+  }
+
+  .timer-strip span {
+    color: #6d7785;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .timer-strip strong {
+    font-size: 1rem;
   }
 
   .item-row {

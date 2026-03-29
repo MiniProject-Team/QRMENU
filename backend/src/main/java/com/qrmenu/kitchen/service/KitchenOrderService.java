@@ -69,7 +69,11 @@ public class KitchenOrderService {
         dto.setOrderId(order.getId());
         dto.setStatus(order.getStatus().name());
         dto.setCreatedAt(order.getCreatedAt() == null ? null : order.getCreatedAt().toString());
+        dto.setStartTime(order.getOrderStartTime() == null ? null : order.getOrderStartTime().toString());
+        dto.setOrderStartTime(order.getOrderStartTime() == null ? null : order.getOrderStartTime().toString());
         dto.setTableId(order.getTableId());
+        dto.setTotalTime(order.getTotalTimeMinutes());
+        dto.setTotalTimeMinutes(order.getTotalTimeMinutes());
 
         String tableNumber;
         if (order.getTableId() == null) {

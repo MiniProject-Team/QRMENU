@@ -35,6 +35,12 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "total_time_minutes")
+    private Integer totalTimeMinutes;
+
+    @Column(name = "order_start_time")
+    private LocalDateTime orderStartTime;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<OrderItem> items;
 
@@ -42,6 +48,9 @@ public class Order {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.orderStartTime == null) {
+            this.orderStartTime = this.createdAt;
+        }
         if (this.status == null) {
             this.status = OrderStatus.PLACED;
         }

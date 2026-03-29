@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import GuestMobileNav from "../../components/GuestMobileNav";
 import { loadGuestCart, saveGuestCart } from "../../utils/guestFlow";
+import { getMenuImage } from "../../utils/menuImages";
 
 const fmtCurrency = (value) => `Rs ${Number(value ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
@@ -86,7 +87,15 @@ const Cart = () => {
           {cart.map((item) => (
             <article key={item.id} className="cart-item">
               <div className="thumb">
-                {item.imageUrl ? <img src={item.imageUrl} alt={item.name} /> : <span>{String(item.name).slice(0, 2).toUpperCase()}</span>}
+                <img
+                  src={getMenuImage(item)}
+                  alt={item.name}
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src =
+                      "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80";
+                  }}
+                />
               </div>
 
               <div className="item-copy">

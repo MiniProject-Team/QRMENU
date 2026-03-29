@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +21,7 @@ public class UserOrderService {
 
     private final OrderRepository orderRepository;
     private final MenuRepository menuRepository;
+    private final PreparationTimeService preparationTimeService;
 
     public Order placeOrder(OrderRequest request) {
         if (request.getItems() == null || request.getItems().isEmpty()) {
@@ -29,9 +31,11 @@ public class UserOrderService {
         Order order = new Order();
         order.setTableId(request.getTableId());
         order.setStatus(OrderStatus.PLACED);
+        order.setOrderStartTime(LocalDateTime.now());
 
         List<OrderItem> items = new ArrayList<>();
         double totalAmount = 0;
+        int totalPreparationMinutes = 0;
 
         for (OrderItemRequest itemReq : request.getItems()) {
             MenuItem menuItem = menuRepository.findById(itemReq.getItemId()).orElseThrow();
@@ -44,10 +48,12 @@ public class UserOrderService {
             items.add(item);
 
             totalAmount += menuItem.getPrice() * itemReq.getQuantity();
+            totalPreparationMinutes += preparationTimeService.getPreparationMinutes(menuItem.getCategory()) * itemReq.getQuantity();
         }
 
         order.setItems(items);
         order.setTotalAmount(totalAmount);
+        order.setTotalTimeMinutes(totalPreparationMinutes);
 
         return orderRepository.save(order);
     }

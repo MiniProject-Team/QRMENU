@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import API from "../../api/axios";
 import GuestMobileNav from "../../components/GuestMobileNav";
 import { saveCurrentOrder } from "../../utils/guestFlow";
+import { formatRemainingPrep, getRemainingPrepMs, inferTotalTimeMinutes } from "../../utils/orderTimer";
 
 const progressMap = {
   PLACED: 0,
@@ -42,12 +43,18 @@ const OrderStatus = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     fetchOrder();
     const interval = setInterval(fetchOrder, 3000);
     return () => clearInterval(interval);
   }, [orderId]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const fetchOrder = async () => {
     try {
@@ -99,6 +106,10 @@ const OrderStatus = () => {
   const currentStep = progressMap[currentStatus] ?? 0;
   const meta = statusMeta[currentStatus] ?? statusMeta.PLACED;
   const canProceedToPayment = paymentAllowedStatuses.includes(currentStatus);
+  const startTime = order?.startTime ?? order?.orderStartTime ?? order?.createdAt;
+  const totalTime = order?.totalTime ?? order?.totalTimeMinutes ?? inferTotalTimeMinutes(order?.items);
+  const remainingMs = getRemainingPrepMs(startTime, totalTime, now);
+  const timerLabel = formatRemainingPrep(remainingMs);
 
   return (
     <div className="guest-shell">
@@ -111,7 +122,13 @@ const OrderStatus = () => {
           <p className="page-copy">{meta.message}</p>
         </div>
 
-        <div className={`status-badge tone-${meta.tone}`}>{meta.label}</div>
+        <div className="head-meta">
+          <div className="timer-badge">
+            <span>Cooking timer</span>
+            <strong>{timerLabel}</strong>
+          </div>
+          <div className={`status-badge tone-${meta.tone}`}>{meta.label}</div>
+        </div>
       </header>
 
       <section className="status-layout">
@@ -143,6 +160,11 @@ const OrderStatus = () => {
         <aside className="summary-card">
           <p className="section-kicker">Dining table</p>
           <h2>{order.tableId ?? "-"}</h2>
+          <div className="timer-panel">
+            <span>Estimated prep time</span>
+            <strong>{totalTime ?? 0} min</strong>
+            <p className="muted-copy">Remaining: {timerLabel}</p>
+          </div>
           <p className="muted-copy">
             {canProceedToPayment
               ? "Order is ready for settlement. You can proceed with payment now."
@@ -208,6 +230,12 @@ const CSS = `
     align-items: flex-start;
   }
 
+  .head-meta {
+    display: grid;
+    gap: 12px;
+    justify-items: end;
+  }
+
   .section-kicker {
     margin: 0 0 10px;
     color: #0891b2;
@@ -245,6 +273,38 @@ const CSS = `
     padding: 10px 16px;
     font-size: 0.82rem;
     font-weight: 800;
+  }
+
+  .timer-badge,
+  .timer-panel {
+    border-radius: 20px;
+    background: rgba(8, 145, 178, 0.1);
+    border: 1px solid rgba(8, 145, 178, 0.14);
+  }
+
+  .timer-badge {
+    min-width: 180px;
+    padding: 14px 16px;
+    text-align: right;
+  }
+
+  .timer-badge span,
+  .timer-panel span {
+    display: block;
+    color: #557180;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
+  .timer-badge strong,
+  .timer-panel strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #0f2230;
   }
 
   .tone-amber { background: rgba(250, 204, 21, 0.18); color: #9a6700; }
@@ -316,6 +376,15 @@ const CSS = `
     margin-bottom: 12px;
   }
 
+  .timer-panel {
+    margin: 18px 0;
+    padding: 16px;
+  }
+
+  .timer-panel .muted-copy {
+    margin: 10px 0 0;
+  }
+
   .primary-btn {
     border: none;
     border-radius: 16px;
@@ -383,6 +452,10 @@ const CSS = `
 
     .status-head {
       gap: 12px;
+    }
+
+    .head-meta {
+      justify-items: start;
     }
 
     h1 {
