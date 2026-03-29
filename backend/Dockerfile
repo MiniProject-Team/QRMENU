@@ -11,4 +11,4 @@ RUN chmod +x gradlew
 RUN ./gradlew build
 
 # Run the jar
-CMD ["sh", "-c", "java -jar build/libs/*.jar"]
+CMD ["sh", "-c", "java -jar build/libs/*SNAPSHOT.jar"]
