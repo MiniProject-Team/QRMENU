@@ -27,11 +27,26 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+
+                // ✅ CORS preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // ✅ PUBLIC ROUTES (IMPORTANT)
+                .requestMatchers("/", "/test").permitAll()
+                .requestMatchers("/api/menu/**").permitAll()
+                .requestMatchers("/api/order/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/user/**").permitAll()
+
+                // ✅ USER ROUTES
+                .requestMatchers("/api/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+
+                // ✅ ADMIN ROUTES
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+
+                // ✅ KITCHEN ROUTES
                 .requestMatchers("/api/kitchen/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_KITCHEN")
+
+                // 🔐 बाकी सब protected
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -39,11 +54,13 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // 🔐 Password encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // 🔐 Auth manager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
