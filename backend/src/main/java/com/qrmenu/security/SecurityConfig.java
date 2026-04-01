@@ -20,39 +20,42 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .cors().and()
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
+   @Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+        .csrf(csrf -> csrf.disable())
+        .cors(cors -> {}) // updated (no deprecated warning)
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
 
-                // ✅ CORS preflight
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            // ✅ CORS preflight
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // ✅ PUBLIC ROUTES (IMPORTANT)
-                .requestMatchers("/", "/test").permitAll()
-                .requestMatchers("/api/menu/**").permitAll()
-                .requestMatchers("/api/order/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
+            // ✅ PUBLIC ROUTES (NO LOGIN REQUIRED)
+            .requestMatchers("/", "/test").permitAll()
+            .requestMatchers("/api/menu/**").permitAll()
+            .requestMatchers("/api/order/**").permitAll()
+            .requestMatchers("/api/auth/**").permitAll()
 
-                // ✅ USER ROUTES
-                .requestMatchers("/api/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+            // 🔥 IMPORTANT: allow guest menu access
+            .requestMatchers("/api/user/menu").permitAll()
 
-                // ✅ ADMIN ROUTES
-                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+            // ✅ USER ROUTES (login required)
+            .requestMatchers("/api/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
-                // ✅ KITCHEN ROUTES
-                .requestMatchers("/api/kitchen/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_KITCHEN")
+            // ✅ ADMIN ROUTES
+            .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
 
-                // 🔐 बाकी सब protected
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            // ✅ KITCHEN ROUTES
+            .requestMatchers("/api/kitchen/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_KITCHEN")
 
-        return http.build();
-    }
+            // 🔐 बाकी सब protected
+            .anyRequest().authenticated()
+        )
+        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+    return http.build();
+}
 
     // 🔐 Password encoder
     @Bean

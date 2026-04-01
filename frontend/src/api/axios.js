@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://qrmenu-2a58.onrender.com", // make sure port matches your backend
+  baseURL: "https://qrmenu-2a58.onrender.com/api", // make sure port matches your backend
 });
 
 // attach JWT if exists
