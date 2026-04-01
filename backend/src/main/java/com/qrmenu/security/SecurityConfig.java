@@ -10,7 +10,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,42 +20,41 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-   @Bean
-public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http
-        .csrf(csrf -> csrf.disable())
-        .cors(cors -> {}) // updated (no deprecated warning)
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(auth -> auth
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            // ❌ disable CSRF
+            .csrf(csrf -> csrf.disable())
 
-            // ✅ CORS preflight
-            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            // ✅ enable CORS
+            .cors(cors -> {})
 
-            // ✅ PUBLIC ROUTES (NO LOGIN REQUIRED)
-            .requestMatchers("/", "/test").permitAll()
-            .requestMatchers("/api/menu/**").permitAll()
-            .requestMatchers("/api/order/**").permitAll()
-            .requestMatchers("/api/auth/**").permitAll()
+            // ❌ no session (JWT use kar rahe hai)
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 🔥 IMPORTANT: allow guest menu access
-            .requestMatchers("/api/user/menu").permitAll()
+            // 🔓 AUTHORIZE REQUESTS
+            .authorizeHttpRequests(auth -> auth
 
-            // ✅ USER ROUTES (login required)
-            .requestMatchers("/api/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                // ✅ CORS preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-            // ✅ ADMIN ROUTES
-            .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                // ✅ PUBLIC ROUTES
+                .requestMatchers("/", "/test").permitAll()
+                .requestMatchers("/api/menu/**").permitAll()
+                .requestMatchers("/api/user/**").permitAll()
+                .requestMatchers("/api/order/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
 
-            // ✅ KITCHEN ROUTES
-            .requestMatchers("/api/kitchen/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_KITCHEN")
+                // 🔥 IMPORTANT: testing ke liye sab open
+                .anyRequest().permitAll()
+            )
 
-            // 🔐 बाकी सब protected
-            .anyRequest().authenticated()
-        )
-        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            // ❌ JWT filter temporarily disable (testing ke liye)
+            // .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            ;
 
-    return http.build();
-}
+        return http.build();
+    }
 
     // 🔐 Password encoder
     @Bean
