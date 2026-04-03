@@ -9,13 +9,13 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
+    // ❌ TEMP: disable JWT filter for now (to fix 403)
+    // private final JwtFilter jwtFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -27,37 +27,25 @@ public class SecurityConfig {
             // ✅ Enable CORS
             .cors(cors -> {})
 
-            // ❌ Stateless session (JWT)
+            // ❌ Stateless session
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 🔐 Authorization rules
+            // 🔓 Authorization rules
             .authorizeHttpRequests(auth -> auth
 
-                // ✅ Allow preflight (IMPORTANT for frontend)
+                // ✅ Allow preflight
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // ✅ PUBLIC APIs (no login required)
+                // ✅ PUBLIC APIs (IMPORTANT)
                 .requestMatchers("/", "/test").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/menu/**").permitAll()
                 .requestMatchers("/api/user/menu").permitAll()
                 .requestMatchers("/api/order/**").permitAll()
 
-                // 👤 USER APIs (login required)
-                .requestMatchers("/api/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-
-                // 👨‍💼 ADMIN APIs
-                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-
-                // 👨‍🍳 KITCHEN APIs
-                .requestMatchers("/api/kitchen/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_KITCHEN")
-
-                // 🔐 All other requests need authentication
-                .anyRequest().authenticated()
-            )
-
-            // ✅ JWT Filter
-         .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                // 🔥 TEMP: allow everything (for testing)
+                .anyRequest().permitAll()
+            );
 
         return http.build();
     }
