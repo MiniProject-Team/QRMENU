@@ -6,8 +6,13 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "com.qrmenu.shared.repository")  // ✅ FIX
-@EntityScan(basePackages = "com.qrmenu.shared.model")                 // ✅ FIX
+
+// ✅ Scan all JPA repositories
+@EnableJpaRepositories(basePackages = "com.qrmenu.shared.repository")
+
+// ✅ Scan all entity classes
+@EntityScan(basePackages = "com.qrmenu.shared.model")
+
 public class QrFoodApplication {
 
     public static void main(String[] args) {
