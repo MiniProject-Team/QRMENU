@@ -10,7 +10,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,35 +23,45 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // ❌ disable CSRF
+            // ❌ Disable CSRF (JWT use kar rahe hai)
             .csrf(csrf -> csrf.disable())
 
-            // ✅ enable CORS
+            // ✅ Enable CORS
             .cors(cors -> {})
 
-            // ❌ no session (JWT use kar rahe hai)
+            // ❌ No session (stateless JWT)
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 🔓 AUTHORIZE REQUESTS
+            // 🔐 Authorization rules
             .authorizeHttpRequests(auth -> auth
 
-                // ✅ CORS preflight
+                // ✅ Preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // ✅ PUBLIC ROUTES
+                // ✅ PUBLIC APIs (NO LOGIN REQUIRED)
                 .requestMatchers("/", "/test").permitAll()
-                .requestMatchers("/api/menu/**").permitAll()
-                .requestMatchers("/api/user/**").permitAll()
-                .requestMatchers("/api/order/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/menu/**").permitAll()
+                .requestMatchers("/api/order/**").permitAll()
 
-                // 🔥 IMPORTANT: testing ke liye sab open
-                .anyRequest().permitAll()
+                // 🔥 IMPORTANT (Frontend Menu Access)
+                .requestMatchers("/api/user/menu").permitAll()
+
+                // 👤 USER APIs (LOGIN REQUIRED)
+                .requestMatchers("/api/user/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+
+                // 👨‍💼 ADMIN APIs
+                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+
+                // 👨‍🍳 KITCHEN APIs
+                .requestMatchers("/api/kitchen/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_KITCHEN")
+
+                // 🔐 बाकी सब protected
+                .anyRequest().authenticated()
             )
 
-            // ❌ JWT filter temporarily disable (testing ke liye)
-            // .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-            ;
+            // ✅ JWT filter enable
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -62,7 +72,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // 🔐 Auth manager
+    // 🔐 Authentication manager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
