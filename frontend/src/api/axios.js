@@ -6,12 +6,12 @@ const API = axios.create({
 
 // attach JWT only if needed
 API.interceptors.request.use((req) => {
-  const token = localStorage.getItem("token");
+  // const token = localStorage.getItem("token");
 
-  // ❗ Only attach token for protected APIs
-  if (token && !req.url.includes("/user/menu")) {
-    req.headers.Authorization = `Bearer ${token}`;
-  }
+  // // ❗ Only attach token for protected APIs
+  // if (token && !req.url.includes("/user/menu")) {
+  //   req.headers.Authorization = `Bearer ${token}`;
+  // }
 
   return req;
 });
