@@ -55,3 +55,13 @@ implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// Local credentials must not be bundled into deployable application jars.
+tasks.named('processResources') {
+	exclude 'application-local.properties', 'application-local.yml', 'application-local.yaml'
+}
+
+// Keep private development configuration external to the application classpath.
+tasks.named('bootRun') {
+	args '--spring.config.additional-location=optional:file:./src/main/resources/application-local.properties'
+}

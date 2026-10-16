@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -37,8 +38,16 @@ public class QrFoodApplication {
 
     // ✅ CREATE ADMIN USER AUTOMATICALLY
     @Bean
-    public CommandLineRunner createAdmin() {
+    public CommandLineRunner createAdmin(
+            @Value("${ADMIN_BOOTSTRAP_PASSWORD:}") String bootstrapPassword) {
         return args -> {
+            // Provisioning is opt-in; never ship a shared default password.
+            if (bootstrapPassword.isBlank()) {
+                return;
+            }
+            if (bootstrapPassword.length() < 16) {
+                throw new IllegalArgumentException("ADMIN_BOOTSTRAP_PASSWORD must contain at least 16 characters");
+            }
 
             // 🔹 Step 1: Get or create ROLE_ADMIN
             Role adminRole = roleRepository.findByName(RoleName.ROLE_ADMIN)
@@ -53,13 +62,13 @@ public class QrFoodApplication {
 
                 User user = new User();
                 user.setUsername("admin");
-                user.setPassword(passwordEncoder.encode("admin123"));
+                user.setPassword(passwordEncoder.encode(bootstrapPassword));
                 user.setFullName("Admin");
                 user.setRole(adminRole);
 
                 userRepository.save(user);
 
-                System.out.println("✅ Admin created: admin / admin123");
+                System.out.println("Admin account created");
             }
         };
     }
