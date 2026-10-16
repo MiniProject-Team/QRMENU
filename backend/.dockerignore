@@ -3,3 +3,15 @@ node_modules
 .gitignore
 Dockerfile
 README.md
+.env
+.env.*
+**/application-local.properties
+**/application-local.yml
+**/application-local.yaml
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+build
+.gradle

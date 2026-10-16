@@ -1,3 +1,4 @@
+-- Schema only. Real users, password hashes, orders and payments must never be committed.
 --
 -- PostgreSQL database dump
 --
@@ -7,7 +8,6 @@
 -- Dumped from database version 17.7
 -- Dumped by pg_dump version 17.7
 
--- Started on 2026-02-21 13:50:12
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -520,242 +520,141 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 --
 -- TOC entry 4995 (class 0 OID 20376)
 -- Dependencies: 224
--- Data for Name: categories; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.categories (id, name, description, created_at) FROM stdin;
-1	Starters	Appetizers and light snacks	2026-02-21 13:40:51.503849
-2	Main Course	Full meal dishes	2026-02-21 13:40:51.503849
-3	Beverages	Drinks and refreshments	2026-02-21 13:40:51.503849
-4	Desserts	Sweet dishes	2026-02-21 13:40:51.503849
-\.
 
 
 --
 -- TOC entry 4999 (class 0 OID 20402)
 -- Dependencies: 228
--- Data for Name: inventory; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.inventory (id, menu_item_id, stock_quantity, last_updated) FROM stdin;
-1	1	50	2026-02-21 13:41:09.979159
-2	2	40	2026-02-21 13:41:09.979159
-3	3	30	2026-02-21 13:41:09.979159
-4	4	60	2026-02-21 13:41:09.979159
-5	5	70	2026-02-21 13:41:09.979159
-6	6	100	2026-02-21 13:41:09.979159
-7	7	120	2026-02-21 13:41:09.979159
-8	8	45	2026-02-21 13:41:09.979159
-\.
 
 
 --
 -- TOC entry 4997 (class 0 OID 20386)
 -- Dependencies: 226
--- Data for Name: menu_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.menu_items (id, name, description, price, category_id, image_url, is_available, created_at) FROM stdin;
-1	Paneer Tikka	Grilled cottage cheese cubes	220.00	1	paneer.jpg	t	2026-02-21 13:41:00.426571
-2	Veg Manchurian	Fried veg balls in sauce	180.00	1	manchurian.jpg	t	2026-02-21 13:41:00.426571
-3	Butter Chicken	Creamy tomato chicken curry	350.00	2	butterchicken.jpg	t	2026-02-21 13:41:00.426571
-4	Veg Biryani	Spiced vegetable rice	250.00	2	biryani.jpg	t	2026-02-21 13:41:00.426571
-5	Masala Dosa	Crispy dosa with potato filling	120.00	2	dosa.jpg	t	2026-02-21 13:41:00.426571
-6	Cold Coffee	Chilled coffee with ice cream	140.00	3	coffee.jpg	t	2026-02-21 13:41:00.426571
-7	Lemon Soda	Fresh lime soda	60.00	3	lemon.jpg	t	2026-02-21 13:41:00.426571
-8	Gulab Jamun	Sweet milk dumplings	90.00	4	gulabjamun.jpg	t	2026-02-21 13:41:00.426571
-\.
 
 
 --
 -- TOC entry 5007 (class 0 OID 20465)
 -- Dependencies: 236
--- Data for Name: notifications; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.notifications (id, order_id, message, target_role, is_read, created_at) FROM stdin;
-1	1	New order received for Table 1	ROLE_KITCHEN	f	2026-02-21 13:41:45.021555
-2	2	Order ready for Table 2	ROLE_ADMIN	t	2026-02-21 13:41:45.021555
-3	3	Payment received for Order 3	ROLE_ADMIN	f	2026-02-21 13:41:45.021555
-\.
 
 
 --
 -- TOC entry 5003 (class 0 OID 20433)
 -- Dependencies: 232
--- Data for Name: order_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.order_items (id, order_id, menu_item_id, quantity, price) FROM stdin;
-1	1	1	1	220.00
-2	1	3	1	350.00
-3	2	4	1	250.00
-4	2	6	1	140.00
-5	3	5	1	120.00
-6	3	8	1	90.00
-7	4	3	1	350.00
-8	4	6	1	140.00
-9	4	8	1	90.00
-10	5	4	1	250.00
-\.
 
 
 --
 -- TOC entry 5001 (class 0 OID 20418)
 -- Dependencies: 230
--- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.orders (id, table_id, order_status, total_amount, created_at, updated_at) FROM stdin;
-1	1	COOKING	470.00	2026-02-21 13:41:19.671362	2026-02-21 13:41:19.671362
-2	2	READY	390.00	2026-02-21 13:41:19.671362	2026-02-21 13:41:19.671362
-3	3	SERVED	210.00	2026-02-21 13:41:19.671362	2026-02-21 13:41:19.671362
-4	1	PAID	580.00	2026-02-21 13:41:19.671362	2026-02-21 13:41:19.671362
-5	4	PLACED	250.00	2026-02-21 13:41:19.671362	2026-02-21 13:41:19.671362
-\.
 
 
 --
 -- TOC entry 5005 (class 0 OID 20450)
 -- Dependencies: 234
--- Data for Name: payments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.payments (id, order_id, payment_method, payment_status, transaction_id, paid_at) FROM stdin;
-1	4	UPI	SUCCESS	TXN12345UPI	2026-02-21 13:41:37.259456
-2	3	CASH	SUCCESS	\N	2026-02-21 13:41:37.259456
-3	1	CARD	PENDING	TXN67890CARD	\N
-\.
 
 
 --
 -- TOC entry 4989 (class 0 OID 20337)
 -- Dependencies: 218
--- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.roles (id, name) FROM stdin;
-1	ROLE_ADMIN
-2	ROLE_KITCHEN
-\.
 
 
 --
 -- TOC entry 4993 (class 0 OID 20363)
 -- Dependencies: 222
--- Data for Name: tables; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.tables (id, table_number, qr_code_url, is_active, created_at) FROM stdin;
-1	1	http://localhost:4327/menu/1	t	2026-02-21 13:40:31.845911
-2	2	http://localhost:4327/menu/2	t	2026-02-21 13:40:31.845911
-3	3	http://localhost:4327/menu/3	t	2026-02-21 13:40:31.845911
-4	4	http://localhost:4327/menu/4	t	2026-02-21 13:40:31.845911
-5	5	http://localhost:4327/menu/5	f	2026-02-21 13:40:31.845911
-\.
 
 
 --
 -- TOC entry 4991 (class 0 OID 20346)
 -- Dependencies: 220
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.users (id, username, password, full_name, role_id, created_at) FROM stdin;
-1	admin	$2a$10$adminhashedpassword	Restaurant Admin	1	2026-02-21 13:40:19.644445
-2	chef1	$2a$10$chefhashedpassword	Main Chef	2	2026-02-21 13:40:19.644445
-3	chef2	$2a$10$chef2hashedpassword	Assistant Chef	2	2026-02-21 13:40:19.644445
-\.
 
 
 --
 -- TOC entry 5023 (class 0 OID 0)
 -- Dependencies: 223
--- Name: categories_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.categories_id_seq', 1, false);
 
 
 --
 -- TOC entry 5024 (class 0 OID 0)
 -- Dependencies: 227
--- Name: inventory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.inventory_id_seq', 8, true);
 
 
 --
 -- TOC entry 5025 (class 0 OID 0)
 -- Dependencies: 225
--- Name: menu_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.menu_items_id_seq', 8, true);
 
 
 --
 -- TOC entry 5026 (class 0 OID 0)
 -- Dependencies: 235
--- Name: notifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.notifications_id_seq', 3, true);
 
 
 --
 -- TOC entry 5027 (class 0 OID 0)
 -- Dependencies: 231
--- Name: order_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.order_items_id_seq', 10, true);
 
 
 --
 -- TOC entry 5028 (class 0 OID 0)
 -- Dependencies: 229
--- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.orders_id_seq', 1, false);
 
 
 --
 -- TOC entry 5029 (class 0 OID 0)
 -- Dependencies: 233
--- Name: payments_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.payments_id_seq', 3, true);
 
 
 --
 -- TOC entry 5030 (class 0 OID 0)
 -- Dependencies: 217
--- Name: roles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.roles_id_seq', 2, true);
 
 
 --
 -- TOC entry 5031 (class 0 OID 0)
 -- Dependencies: 221
--- Name: tables_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.tables_id_seq', 5, true);
 
 
 --
 -- TOC entry 5032 (class 0 OID 0)
 -- Dependencies: 219
--- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 3, true);
 
 
 --
@@ -997,7 +896,6 @@ ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE SET NULL;
 
 
--- Completed on 2026-02-21 13:50:13
 
 --
 -- PostgreSQL database dump complete

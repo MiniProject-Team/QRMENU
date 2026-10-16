@@ -1,0 +1,29 @@
+# Private configuration and credentials
+.private/
+.env
+.env.*
+!.env.example
+**/application-local.properties
+**/application-local.yml
+**/application-local.yaml
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+credentials*.json
+service-account*.json
+.aws/
+
+# Database exports and backups (QRMENU.sql is a reviewed schema-only file)
+*.sql
+!/QRMENU.sql
+*.dump
+*.backup
+*.bak
+
+# Generated files and logs
+**/.vite/
+**/node_modules/
+**/build/
+*.log
